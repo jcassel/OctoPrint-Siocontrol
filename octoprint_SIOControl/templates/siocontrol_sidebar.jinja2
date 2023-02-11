@@ -1,0 +1,12 @@
+<div class="row-fluid" data-bind="foreach: sioButtons">
+    <div class="siocontrol-button-row row-fluid">
+        <div class="siocontrol-button-label span7">
+            <i data-bind="class: icon"></i>
+            <span data-bind="text: name"></span>
+        </div>
+        <div class="siocontrol-button-controls input-prepend input-append span5" >
+            <button class="btn" data-toggle="dropdown" data-bind="click: $parent.turnSioOn, attr : {'disabled' : current_state != 'off'}">ON</button>
+            <button class="btn" data-toggle="dropdown" data-bind="click: $parent.turnSioOff, attr : {'disabled' : current_state != 'on'}">OFF</button>
+        </div>
+    </div>
+</div>

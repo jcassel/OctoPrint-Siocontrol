@@ -1,0 +1,17 @@
+/* TODO: Have your plugin's CSS files generated to here. */
+.siocontrol-button-row .siocontrol-button-label {
+    padding-top: 4px;
+    padding-bottom: 4px;
+}
+
+.siocontrol-button-row .siocontrol-button-label i {
+    width: 20px;
+}
+
+.siocontrol-button-row .siocontrol-button-controls .btn {
+    width: 50%;
+}
+
+.siocontrol-settings-row {
+    margin-bottom: 5px
+}

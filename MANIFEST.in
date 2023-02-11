@@ -1,0 +1,4 @@
+include README.md
+recursive-include octoprint_SIOControl/templates *
+recursive-include octoprint_SIOControl/translations *
+recursive-include octoprint_SIOControl/static *
