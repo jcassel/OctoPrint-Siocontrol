@@ -1,6 +1,6 @@
 # OctoPrint-Siocontrol
 
-OctoPrint Plugin for Serial IO Control like GPIOControl that adds a sidebar with on/off buttons for controlling outputs as well as monitoring inputs. Also integrates with PSU control and has some other IO related features. Works with the D1mini MCU board. 
+**TODO:** Describe what your plugin does.
 
 ## Setup
 
@@ -15,4 +15,3 @@ the plugin manager.
 ## Configuration
 
 **TODO:** Describe your plugin's configuration options (if any).
-

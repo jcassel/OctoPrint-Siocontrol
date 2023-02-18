@@ -4,9 +4,16 @@
             <i data-bind="class: icon"></i>
             <span data-bind="text: name"></span>
         </div>
-        <div class="siocontrol-button-controls input-prepend input-append span5" >
+        <div class="siocontrol-button-controls input-prepend input-append span5" data-bind="visible: active_mode =='active_out_low' || active_mode =='active_out_high' " >
             <button class="btn" data-toggle="dropdown" data-bind="click: $parent.turnSioOn, attr : {'disabled' : current_state != 'off'}">ON</button>
             <button class="btn" data-toggle="dropdown" data-bind="click: $parent.turnSioOff, attr : {'disabled' : current_state != 'on'}">OFF</button>
         </div>
+        <div class="siocontrol-button-controls input-prepend input-append span5" data-bind="visible: active_mode =='active_in_low' || active_mode =='active_in_high' " >
+            <div class="btn span5 siofntGrn" data-bind="visible: current_state =='on'"><i class="fas fa-toggle-on"></i></div>
+            <div class="btn span5 siofntblk" data-bind="visible: current_state =='off'"><i class="fas fa-toggle-off"></i></div>
+        </div>        
     </div>
+</div>
+<div >
+    <span data-bind="text: IOStatusMessage"></span>
 </div>

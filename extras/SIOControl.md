@@ -1,101 +1,91 @@
 ---
 layout: plugin
+id: siocontrol
+title: SIO Control
+description: Serial IO Control that adds a sidebar with on/off buttons for controling outputs and monitoring of Inputs. Is a Subplugin for integration with PSU control, incorperates EStop and simple Filament runout as physical inputs. Alteritive if you are not using a Raspberry Pie or other device that can take advantage of GPIO. Requires a Microcotroler as the IO. See details below. 
 
-id: SIOControl
-title: OctoPrint-Siocontrol
-description: Serial IO Control that adds a sidebar with on/off buttons for controling outputs. Also integrates with PSU control and has some other unique IO related features.
-authors:
-- JCsGotThis
+authors: jcassel
 license: AGPLv3
-
-# TODO
-date: today's date in format YYYY-MM-DD, e.g. 2015-04-21
-
+date: 2023-02-11
 homepage: https://github.com/jcassel/OctoPrint-Siocontrol
 source: https://github.com/jcassel/OctoPrint-Siocontrol
 archive: https://github.com/jcassel/OctoPrint-Siocontrol/archive/master.zip
 
-# TODO
-# Set this to true if your plugin uses the dependency_links setup parameter to include
-# library versions not yet published on PyPi. SHOULD ONLY BE USED IF THERE IS NO OTHER OPTION!
-#follow_dependency_links: false
-
-# TODO
 tags:
-- a list
-- of tags
-- that apply
-- to your plugin
-- (take a look at the existing plugins for what makes sense here)
+- gpio
+- pc
+- linux
+- gpiostatus
+- pin
+- pins
+- atx
+- control
+- io
+- power
+- estop
+- psu
+- psucontrol
+- psucontrol subplugin
+- gpiocontrol
+- relay
+- enclosure
+- button
+- filament
+- usb
+- serial
+- 232
+- led
 
-# TODO
-# When registering a plugin on plugins.octoprint.org, all screenshots should be uploaded not linked from external sites.
+
 screenshots:
-- url: url of a screenshot, /assets/img/...
-  alt: alt-text of a screenshot
-  caption: caption of a screenshot
-- url: url of another screenshot, /assets/img/...
-  alt: alt-text of another screenshot
-  caption: caption of another screenshot
-- ...
+- url: /assets/img/plugins/SIOControl/SettingsExampleConnAndIntegratons.PNG
+  alt: Settings Example Connection and Integratons
+  caption: Settings and Integration
+- url: /assets/img/plugins/SIOControl/SettingsExampleIOConfig.PNG
+  alt: Settings Example IO Configuration
+  caption: Settings for ad-hoc IO
+- url: /assets/img/plugins/SIOControl/SideBarExample.PNG
+  alt: Side bar example
+  caption: Side bar view
 
-# TODO
-featuredimage: url of a featured image for your plugin, /assets/img/...
 
-# TODO
-# You only need the following if your plugin requires specific OctoPrint versions or
-# specific operating systems to function - you can safely remove the whole
-# "compatibility" block if this is not the case.
-
-compatibility:
-
-  # List of compatible versions
-  #
-  # A single version number will be interpretated as a minimum version requirement,
-  # e.g. "1.3.1" will show the plugin as compatible to OctoPrint versions 1.3.1 and up.
-  # More sophisticated version requirements can be modelled too by using PEP440
-  # compatible version specifiers.
-  #
-  # You can also remove the whole "octoprint" block. Removing it will default to all
-  # OctoPrint versions being supported.
-
-  octoprint:
-  - 1.4.0
-
-  # List of compatible operating systems
-  #
-  # Valid values:
-  #
-  # - windows
-  # - linux
-  # - macos
-  # - freebsd
-  #
-  # There are also two OS groups defined that get expanded on usage:
-  #
-  # - posix: linux, macos and freebsd
-  # - nix: linux and freebsd
-  #
-  # You can also remove the whole "os" block. Removing it will default to all
-  # operating systems being supported.
-
-  os:
-  - linux
-  - windows
-  - macos
-  - freebsd
-
-  # Compatible Python version
-  #
-  # It is recommended to only support Python 3 for new plugins, in which case this should be ">=3,<4"
-  # 
-  # Plugins that wish to support both Python 2 and 3 should set it to ">=2.7,<4".
-  #
-  # Plugins that only support Python 2 will not be accepted into the plugin repository.
-
-  python: ">=3,<4"
+featuredimage: /assets/img/plugins/SIOControl/SettingsExampleConnAndIntegratons.PNG
+python: ">=3,<4"
 
 ---
+# Serial IO Control
+Alternitive to GPIO if you want to add some electronic/improvements to your printer. Works on Linux and Windows. 
 
-**TODO**: Longer description of your plugin, configuration examples etc. This part will be visible on the page at
-http://plugins.octoprint.org/plugin/SIOControl/
+## Setup
+
+Install via the bundled [Plugin Manager](https://docs.octoprint.org/en/master/bundledplugins/pluginmanager.html)
+or manually using this URL:
+
+    https://github.com/jcassel/OctoPrint-Siocontrol/archive/master.zip
+
+Used the power of an Arduino compatible micro controler to do the IO Part. 
+The esp8266(Examples avalible) is used in the tutorial as the IO controller. This is a serial connection not wifi. Firmeare is easly adapted to run on many standard Arduino comparible devices. See [D1SerialIO firmware](https://github.com/jcassel/D1SerialIO) and information on how to make or buy a compatible IO Board. 
+
+## Configuration
+Configure the Serial comport details. 
+- Port path(name)
+- Baudrate  
+- Sensing/reporting interval
+
+Simple selections for integrations
+- Enable and select IO point for PSU Control Sub Plugin.
+- Enable and select IO point for physical EStop.
+- Enable and select IO point for Filament runout sensor.
+
+The number of IO Points is reported by the IO device firmware. In the [D1SerialIO firmware](https://github.com/jcassel/D1SerialIO) there are a total of 8 IO points.
+You can configure each as either an input or an output. The OctoPrint-Serial IO Board has 2 relays and 6 other IO points that can be setup as either inputs or outputs. 
+
+Just add correct GPIO configuration:
+- select icon using icon picker (or typing manually) for better identification
+- type name for your device connected to GPIO
+- type pin number according to BCM numeration - for more details please [visit this page](https://pinout.xyz/)
+- select if device is driven for low or high state of GPIO
+    - _active high_ means that device is **on for high state** of GPIO and **off for low state**
+    - _active low_ means that device is **on for low state** of GPIO and **off for high state**
+- select if device should be on or off by default eg. after startup
+

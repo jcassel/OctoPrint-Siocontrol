@@ -28,13 +28,14 @@ class SiocontrolPlugin(
     def __init__(self):
         # self.config = dict()
         self.IOCurrent = None
+        self.IOStatus = "Ready"
         return
 
     def get_template_vars(self):
-        avalPorts = []
-        avalBaud = ["74880", "115200", "230400", "38400", "19200", "9600"]
         avalIOSI = ["500", "1000", "1500", "2000", "3000", "4000"]
-        avalPorts = self.conn.serialList()
+        self._settings.set(["IOPorts"], self.conn.serialList())
+        self._settings.set(["IOCounts"], self.getCounts())
+
         return {
             "PSUIOPoint": self._settings.get(["PSUIOPoint"]),
             "ESTIOPoint": self._settings.get(["ESTIOPoint"]),
@@ -42,13 +43,15 @@ class SiocontrolPlugin(
             "EnablePSUIOPoint": self._settings.get(["EnablePSUIOPoint"]),
             "IOSI": self._settings.get(["IOSI"]),
             "IOPort": self._settings.get(["IOPort"]),
+            "IOPorts": self._settings.get(["IOPorts"]),
             "IOBaudRate": self._settings.get(["IOBaudRate"]),
-            "IOAvaliblePort": avalPorts,
-            "IOBaudRates": avalBaud,
+            "IOBaudRates": self._settings.get(["IOBaudRates"]),
             "IOSIs": avalIOSI,
             "FRSIOPoint": self._settings.get(["FRSIOPoint"]),
             "EnableFRSIOPoint": self._settings.get(["EnableFRSIOPoint"]),
+            "IOCounts": self._settings.get(["IOCounts"]),
             "sio_configurations": self._settings.get(["sio_configurations"]),
+            "IOStatusMessage": self.IOStatus,
         }
 
     def get_template_configs(self):
@@ -73,14 +76,18 @@ class SiocontrolPlugin(
             InvertPSUIOPoint=False,
             ESTIOPoint="0",
             InvertESTIOPoint=False,
-            IOSI=3000,
-            IOPort="COM3",
-            IOBaudRate=115200,
+            IOSI="",
+            IOPort="",
+            IOBaudRate="",
+            IOBaudRates=["74880", "115200", "230400", "38400", "19200", "9600"],
+            IOPorts=[],
             EnablePSUIOPoint=False,
             EnableESTIOPoint=False,
             EnableFRSIOPoint=False,
             FRSIOPoint="0",
             InvertFRSIOPoint=False,
+            IOCount=100,
+            IOStatusMessage="Unknown Status",
         )
 
     def on_settings_initialized(self):
@@ -102,7 +109,7 @@ class SiocontrolPlugin(
 
         for configuration in self._settings.get(["sio_configurations"]):
             self._logger.info(
-                "Configured GPIO{}: {},{} ({})".format(
+                "Configured SIO{}: {},{} ({})".format(
                     configuration["pin"],
                     configuration["active_mode"],
                     configuration["default_state"],
@@ -116,8 +123,15 @@ class SiocontrolPlugin(
 
         if self.conn.is_connected():
             self._logger.info("Connected to Serial IO")
+            self.IOStatus = "Connected"
         else:
+            self.IOStatus = "Could not connect Serial IO"
             self._logger.error("Could not connect Serial IO")
+            self._logger.info("IOSI:" + str(self._settings.get(["IOSI"])))
+            self._logger.info("IOPort:" + str(self._settings.get(["IOPort"])))
+            self._logger.info("IOPorts:" + str(self._settings.get(["IOPorts"])))
+            self._logger.info("IOBaudRate:" + str(self._settings.get(["IOBaudRate"])))
+            self._logger.info("IOBaudRates" + str(self._settings.get(["IOBaudRates"])))
 
         psucontrol_helpers = self._plugin_manager.get_helpers("psucontrol")
         if not psucontrol_helpers or "register_plugin" not in psucontrol_helpers.keys():
@@ -130,11 +144,27 @@ class SiocontrolPlugin(
         self._logger.info("Regester as Sub Plugin to PSUControl")
 
     def get_api_commands(self):
-        return dict(turnSioOn=["id"], turnSioOff=["id"], getSioState=["id"])
+        return dict(
+            turnSioOn=["id"],
+            turnSioOff=["id"],
+            getSioState=["id"],
+            getPorts="",
+            getIOCounts="",
+            getStatusMessage="",
+        )
 
     def on_api_command(self, command, data):
-        if not user_permission.can():
-            return flask.make_response("Insufficient rights", 403)
+
+        if command == "getStatusMessage":
+            return flask.jsonify(self.IOStatus)
+
+        if command == "getPorts":
+            avalPorts = self.conn.serialList()
+            self._settings.set(["IOPorts"], avalPorts)
+            return flask.jsonify(avalPorts)
+
+        if command == "getIOCounts":
+            return flask.jsonify(self.getCounts())
 
         configuration = self._settings.get(["sio_configurations"])[int(data["id"])]
         pin = int(configuration["pin"])
@@ -151,70 +181,95 @@ class SiocontrolPlugin(
 
         elif command == "turnSioOn":
             if pin > 0:
-                self._logger.info("Turned on SIO{}".format(configuration["pin"]))
+                if self.conn.is_connected():
+                    self._logger.info("Turned on SIO{}".format(configuration["pin"]))
 
-                if configuration["active_mode"] == "active_out_low":
-                    self.conn.send(f"IO {pin} 0")
-                elif configuration["active_mode"] == "active_out_high":
-                    self.conn.send(f"IO {pin} 1")
+                    if configuration["active_mode"] == "active_out_low":
+                        self.conn.send(f"IO {pin} 0")
+                    elif configuration["active_mode"] == "active_out_high":
+                        self.conn.send(f"IO {pin} 1")
+                else:
+                    self._logger.info(
+                        "Not connected ignored IO command on Pin{}".format(pin)
+                    )
 
         elif command == "turnSioOff":
             if pin > 0:
-                self._logger.info("Turned off SIO{}".format(configuration["pin"]))
-                if (
-                    configuration["active_mode"] == "active_out_low"
-                    or configuration["active_mode"] == "active_out_high"
-                ):
-                    if configuration["active_mode"] == "active_out_low":
-                        self.conn.send(f"IO {pin} 1")
-                    elif configuration["active_mode"] == "active_out_high":
-                        self.conn.send(f"IO {pin} 0")
+                if self.conn.is_connected():
+                    self._logger.info("Turned off SIO{}".format(configuration["pin"]))
+                    if (
+                        configuration["active_mode"] == "active_out_low"
+                        or configuration["active_mode"] == "active_out_high"
+                    ):
+                        if configuration["active_mode"] == "active_out_low":
+                            self.conn.send(f"IO {pin} 1")
+                        elif configuration["active_mode"] == "active_out_high":
+                            self.conn.send(f"IO {pin} 0")
+                else:
+                    self._logger.info(
+                        "Not connected ignored IO command on Pin{}".format(pin)
+                    )
 
     def on_api_get(self, request):
         states = []
-
         for configuration in self._settings.get(["sio_configurations"]):
-            pin = int(configuration["pin"])
+            if configuration["pin"] is not None:
+                pin = int(configuration["pin"])
 
-            if pin < 0:
-                states.append("")
-            elif configuration["active_mode"] == "active_in_low":
-                pstate = "off" if self.IOCurrent[pin] == "1" else "on"
-                states.append(pstate)
-            elif configuration["active_mode"] == "active_in_high":
-                pstate = "on" if self.IOCurrent[pin] == "1" else "off"
-                states.append(pstate)
-            elif configuration["active_mode"] == "active_out_low":
-                pstate = "off" if self.IOCurrent[pin] == "1" else "on"
-                states.append(pstate)
-            elif configuration["active_mode"] == "active_out_high":
-                pstate = "on" if self.IOCurrent[pin] == "1" else "off"
-                states.append(pstate)
+                if self.IOCurrent is not None:
+                    if pin < 0:
+                        states.append("")
+                    elif configuration["active_mode"] == "active_in_low":
+                        pstate = "off" if self.IOCurrent[pin] == "1" else "on"
+                        states.append(pstate)
+                    elif configuration["active_mode"] == "active_in_high":
+                        pstate = "on" if self.IOCurrent[pin] == "1" else "off"
+                        states.append(pstate)
+                    elif configuration["active_mode"] == "active_out_low":
+                        pstate = "off" if self.IOCurrent[pin] == "1" else "on"
+                        states.append(pstate)
+                    elif configuration["active_mode"] == "active_out_high":
+                        pstate = "on" if self.IOCurrent[pin] == "1" else "off"
+                        states.append(pstate)
+                else:
+                    states.append("off")
+            else:
+                states.append("off")
 
         return flask.jsonify(states)
+
+    def getCounts(self):
+        if self.conn.IOCount != 0:
+            counts = [k for k in range(0, self.conn.IOCount)]
+        else:
+            counts = []
+        return counts
 
     def on_settings_save(self, data):
 
         octoprint.plugin.SettingsPlugin.on_settings_save(self, data)
 
-        comChanged = False
-        if "IOPort" in data:
-            self._settings.set(["IOPort"], data["IOPort"])
-            comChanged = True
+        # should do direct IO configuration sends here.
+
+        comChanged = True
+        # if "IOPort" in data:
+        #    self._settings.set(["IOPort"], data["IOPort"])
+        #    comChanged = True
 
         if "IOBaudRate" in data:
             self._settings.set(["IOBaudRate"], data["IOBaudRate"])
             comChanged = True
 
         if comChanged:
-            if self.conn.is_connected:
+            if self.conn.is_connected():
                 self.conn.stopReadThread()
                 self.conn.disconnect()
-                self.conn.connect()
-                if self.conn.is_connected():
-                    self._logger.info("Connected to Serial IO")
-                else:
-                    self._logger.error("Could not connect Serial IO")
+
+            self.conn.connect()
+            if self.conn.is_connected():
+                self._logger.info("Connected")
+            else:
+                self._logger.error("Could not connect to SIO.")
 
         if "IOSI" in data:
             self._settings.set(["IOSI"], data["IOSI"])
@@ -222,8 +277,8 @@ class SiocontrolPlugin(
         if "PSUIOPoint" in data:
             self._settings.set(["PSUIOPoint"], data["PSUIOPoint"])
 
-        if self.conn.is_connected:
-            self.conn.Update_IOSI(data["IOSI"])
+        if self.conn.is_connected():
+            self.conn.Update_IOSI(self._settings.set(["IOSI"]))
 
         self.reload_settings()
 
@@ -253,7 +308,7 @@ class SiocontrolPlugin(
         rtn = None
 
         if self.IOCurrent is None:
-            self.IOCurrent = "000000000"
+            return False
 
         psuRelayState = self.IOCurrent[int(self._settings.get(["PSUIOPoint"]))]
         self._logger.info("******Reporting PSU Current State:" + psuRelayState)
@@ -272,8 +327,8 @@ class SiocontrolPlugin(
         # core UI here.
         # "less": ["less/PSUControlSerial.less"],
         return dict(
-            js=["js/SIOControl.js", "js/fontawesome-iconpicker.min.js"],
-            css=["css/SOIControl.css", "css/fontawesome-iconpicker.min.css"],
+            js=["js/siocontrol.js", "js/fontawesome-iconpicker.min.js"],
+            css=["css/siocontrol.css", "css/fontawesome-iconpicker.min.css"],
         )
 
     ##~~ Softwareupdate hook

@@ -36,8 +36,6 @@ class Connection:
         self._identifier = plugin._identifier
         self._settings = plugin._settings
         self.plugin = plugin
-        # self.ports = []
-
         self.readThread = None
         self.readThreadStop = False
         self._connected = False
@@ -45,7 +43,7 @@ class Connection:
         self.gCodeExtrusion = 0
         self.boxExtrusion = 0
         self.boxExtrusionOffset = 0
-        # self.connect()
+        self.IOCount = 0
 
     def disconnect(self):
 
@@ -53,23 +51,38 @@ class Connection:
             self.serialConn.close()
             time.sleep(1)
 
+        self.IOCount = 0
+        self._connected = False
+        self.plugin.IOStatus = "Disconnected"
         return
 
     def connect(self):
-        self._logger.info("Connecting...")
-        # self.ports = self.serialList()  # dont really need now.
         try:
-            # self.serialConn = serial.Serial("COM3", 115200, timeout=0.5)
+            if (
+                str(self._settings.get(["IOPort"])) != "None"
+                and str(self._settings.get(["IOBaudRate"])) != "None"
+            ):
+                self._logger.info("Connecting...")
+                self.serialConn = serial.Serial(
+                    self._settings.get(["IOPort"]),
+                    int(self._settings.get(["IOBaudRate"])),
+                    timeout=0.5,
+                )
 
-            self.serialConn = serial.Serial(
-                self._settings.get(["IOPort"]),
-                int(self._settings.get(["IOBaudRate"])),
-                timeout=0.5,
-            )
-            if self.serialConn.is_open:
-                self._connected = True
-                self._logger.info("Starting read thread...")
-                self.startReadThread()
+                if self.serialConn.is_open:
+                    self._connected = True
+                    self._logger.info("Starting read thread...")
+                    # self.send("IC")  # request io count
+                    self.plugin.IOStatus = "Connected"
+                    self.startReadThread()
+                else:
+                    self.plugin.IOStatus = "Could not connect to SIO"
+            else:
+                self._logger.info(
+                    "Connection Information not set. Conneciton to SIO not attempted."
+                )
+                self.plugin.IOStatus = "Connection settings Error"
+                self._connected = False
 
         except serial.SerialException as err:
             self._logger.info("Connection failed!")
@@ -125,6 +138,7 @@ class Connection:
         self.serialConn.write(data.encode())
 
     def read_thread(self, serialConnection):
+        errorCount = 0
         self._logger.info("Read Thread: Starting thread")
         while self.readThreadStop is False:
             try:
@@ -137,19 +151,35 @@ class Connection:
 
                     if line[:2] == "IO":
                         self._logger.info(f"IO Reported State as:{line=}")
-                        self.plugin.IOCurrent = line[3:][:9]  # just digital
+                        self.plugin.IOCurrent = line[3:]
+                        self.IOCount = len(self.plugin.IOCurrent)
                         self.checkActionIO()
+                        errorCount = 0
 
                     if line[:2] == "OK":
                         self._logger.info(f"IO Responded with:{line=}")
+                        errorCount = 0
 
-                    if line[:2] != "OK" and line[:2] != "IO":
+                    if line[:2] == "IC":  # explicit report IO count.
+                        self.IOCount = int(line[3:])
+                        errorCount = 0
+
+                    if line[:2] != "OK" and line[:2] != "IO" and line[:2] != "IC":
                         self._logger.info(f"IO sent:{line=}")  # error?
+                        errorCount = errorCount + 1
+                        if errorCount > 9:
+                            self.plugin.IOCurrent = ""
+                            self.IOCount = 0
+                            self.disconnect()
+                            self._connected = False
+                            self._logger.error("Too many Comm Errors disconnecting IO")
+                            self.stopReadThread()
+                            self.plugin.IOStatus = "COMM ERROR"
 
             except serial.SerialException:
+                self.disconnect()
                 self._connected = False
                 self._logger.error("error reading from USB")
-                # self.update_ui_control("disconnected")
                 self.stopReadThread()
 
         self._logger.info("Read Thread: Thread stopped.")
@@ -170,7 +200,12 @@ class Connection:
                     i += 1
 
             except Exception as err:
-                self._logger.exception(f"Unexpected {err=}, {type(err)=}")
+                # [22] happens on windows machines. This is normal.
+                if err.errno != 22:
+                    self._logger.exception(f"Unexpected {err=}, {type(err)=}")
+                else:
+                    self._logger.info(f"Unexpected {err=}, {type(err)=}")
+
                 pass
         else:
             candidates = []
@@ -234,7 +269,9 @@ class Connection:
             selected_port = os.path.realpath(selected_port)
 
         printer_port = self._printer.get_current_connection()[1]
-        self._logger.info("Trying port: %s" % selected_port)
+        self._logger.info(
+            "Checking is this port: %s the printers connected port?" % selected_port
+        )
         self._logger.info("Printer port: %s" % printer_port)
         # because ports usually have a second available one (.tty or .cu)
         printer_port_alt = ""
