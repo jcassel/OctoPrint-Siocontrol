@@ -58,7 +58,7 @@ python: ">=3,<4"
 
 ---
 # Serial IO Control
-Method for adding IO to any OctoPrint instance. Uses a serial connection to a micro controller like the Arduino Mega, Nano, Esp8266/ESP32 over a direct wired serial connection. A basic alternitive to using GPIO/local IO on a Raspberry Pi like device. Could also be used with GPIO or RPIO on these devices. The number of IO and use case is programable at the firmware of the Micro controller. The serial protocal is simple and can be ported to just about any micro controller with ease. There are a several examples of firmware that can be used as is or adjusted to your needs. See [GitHub repository](https://github.com/jcassel/OctoPrint-Siocontrol) for a list and links to details. Additionally one could purchase and use several "off the shelf" control boards also listed at this plugin's home page.
+Add Serial IO to any OctoPrint instance. Use a serial connection to a micro controller like the Arduino Mega, Nano, Esp8266/ESP32 over a direct wired serial connection. A basic alternitive to using GPIO/local IO on a Raspberry Pi like device. Could also be used with GPIO or RPIO on these devices. The number of IO and use case is programable at the firmware of the Micro controller. The serial protocal is simple and can be ported to just about any micro controller with ease. There are a several examples of firmware that can be used as is or adjusted to your needs. See [GitHub repository](https://github.com/jcassel/OctoPrint-Siocontrol) for a list and links to details. Additionally one could purchase and use several "off the shelf" control boards also listed at this plugin's home page.
 
 ## Setup
 
@@ -67,6 +67,8 @@ or manually using this URL:
 
     https://github.com/jcassel/OctoPrint-Siocontrol/archive/master.zip
 
+## Getting Started
+Before you plug in your IO device, you should ensure that you can connect to your printer. Make note of the port that your printer is on and set the Octoprint connection parameters for the port to the known port for your printer. Select Save connection settings. This will ensure that Octorprint tries to connect to your printer directly based on the ports you set and not do an auto connect sequence which can often mistake the IO for the printer. Once you have that set, connect your IO device and follow the steps below to conigure. 
 
 ## Configuration
 Configure the Serial comport details. 
