@@ -11,14 +11,14 @@ plugin_package = "octoprint_siocontrol"
 
 # The plugin's human readable name. Can be overwritten within OctoPrint's internal data via __plugin_name__ in the
 # plugin module
-plugin_name = "OctoPrint-Siocontrol"
+plugin_name = "SIO Control"
 
 # The plugin's version. Can be overwritten within OctoPrint's internal data via __plugin_version__ in the plugin module
 plugin_version = "0.6.1"
 
 # The plugin's description. Can be overwritten within OctoPrint's internal data via __plugin_description__ in the plugin
 # module
-plugin_description = "OctoPrint Plugin for Serial IO Control like GPIOControl that adds a sidebar with on/off buttons for controlling outputs as well as monitoring inputs. Also integrates with PSU control and has some other IO related features. Works with the D1mini MCU board."
+plugin_description = "Serial IO Control, Adds a sidebar with on/off buttons for controling of Outputs and monitoring of Inputs. Is also a Subplugin for integration with PSU control, incorperates EStop and simple Filament runout as physical inputs. Mainly serves as an alteritive if you are not using a Raspberry Pie or other device that can take advantage local IO. Requires a Microcotroler as the IO."
 
 # The plugin's author. Can be overwritten within OctoPrint's internal data via __plugin_author__ in the plugin module
 plugin_author = "jcassel"

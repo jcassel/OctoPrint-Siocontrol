@@ -8,10 +8,6 @@ The number of IO and use case is configurable in the firmware of the micro contr
 - [OctoPrint-SerialIO Control board]:(https://www.tindie.com/products/jcsgotthis/iot-project-board-octoprint-siocontrol-board/) with 2 relay outputs, 6 digital configurable(in/out)puts. 
 
 
-
-
-
-
 ## Setup
 
 Install via the bundled [Plugin Manager](https://docs.octoprint.org/en/master/bundledplugins/pluginmanager.html)
@@ -20,7 +16,7 @@ or manually using this URL:
     https://github.com/jcassel/OctoPrint-Siocontrol/archive/master.zip
 
 ## Getting Started
-Before you plug in your IO device, you should ensure that you can connect to your printer. Make note of the port that your printer is on and set the Octoprint connection parameters for the port to the known port for your printer. Select Save connection settings. This will ensure that Octorprint tries to connect to your printer directly based on the ports you set and not do an auto connect sequence which can often mistake the IO for the printer. Once you have that set, connect your IO device and follow the steps below to conigure. 
+Before you plug in your IO device, you should ensure that you can connect to your printer. Make note of the port that your printer is on and set the Octoprint connection parameters for the port to the known port for your printer. Select the check box to "Save connection settings". This will ensure that Octorprint tries to connect to your printer directly based on the ports you set and not do an auto connect sequence which can often mistake the IO for the printer. Once you have that set, connect your IO device and follow the steps below to conigure. 
 
 ## Configuration
 Configure the Serial comport details. 

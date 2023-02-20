@@ -71,9 +71,9 @@ class Connection:
 
                 if self.serialConn.is_open:
                     self._connected = True
-                    self._logger.info("Starting read thread...")
-                    # self.send("IC")  # request io count
+                    # self.send("BIO")  # request io
                     self.plugin.IOStatus = "Connected"
+                    self._logger.info("Starting read thread...")
                     self.startReadThread()
                 else:
                     self.plugin.IOStatus = "Could not connect to SIO"
