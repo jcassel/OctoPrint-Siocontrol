@@ -1,6 +1,6 @@
 # OctoPrint-Siocontrol
 The Serial IO Control OctoPrint plugin, Adds a sidebar with on/off buttons for controling of Outputs and monitoring of Inputs. Is also a Subplugin for integration with PSU control, incorperates a physical EStop and simple Filament runout as sensor. Serves as an alteritive IO control for users that are not using a Raspberry Pie or other device that can take advantage local IO. Requires a Microcotroler as the IO. See details below.
-![Connection and Integrations Config](https://github.com/jcassel/OctoPrint-Siocontrol/blob/main/extras/SettingsExampleConnAndIntegratons.PNG)
+![sidebar view](https://github.com/jcassel/OctoPrint-Siocontrol/blob/main/extras/SideBarExample.PNG)
 
 With the Serial IO Control and an inexpensive Micro controller you can add Serial IO to any OctoPrint instance. Use a serial connection to a micro controller like the Arduino Mega, Nano, Esp8266/ESP32 over a direct wired serial connection. Use the mocro controllers Digital IO from Octoprint. An alternitive to using GPIO/local IO on a Raspberry Pi like device. Specificly targed at users of octoprint that have chosen to not use a Raspberry Pi. 
 
@@ -27,6 +27,8 @@ Configure the Serial comport details.
 - Baudrate  
 - Sensing/reporting interval
 
+![Connection and integrations](https://github.com/jcassel/OctoPrint-Siocontrol/blob/main/extras/SettingsExampleConnAndIntegratons.PNG)
+
 Save these settings check in the lower left navigation pain. It should say "Connected". If not you may not have put in the correct connection details. You can now reopen the SIO setting and assigne the rest of the details as needed. 
 
 Simple selections for integrations
@@ -34,7 +36,10 @@ Simple selections for integrations
 - Enable and select IO point for physical EStop.
 - Enable and select IO point for Filament runout sensor.
 
-The number of IO Points is reported by the IO device firmware. In the [D1SerialIO firmware](https://github.com/jcassel/D1SerialIO) there are a total of 8 IO points. The [nanoSerialIO Firmware](https://github.com/jcassel/nanoSerialIO) has 20 digital points. All can configure each as either an input or an output. The OctoPrint-Serial IO Board I offer on Tindie has 2 relays and 6 other IO points that can be setup as either inputs or outputs. 
+IO Point numbers and configurations must match the IO device firmware setup. In the [D1SerialIO firmware](https://github.com/jcassel/D1SerialIO) there are a total of 8 IO points. The [nanoSerialIO Firmware](https://github.com/jcassel/nanoSerialIO) has 20 digital points. All can configure each as either an input or an output. The OctoPrint-Serial IO Board I offer on Tindie has 2 relays and 6 other IO points that can be setup as either inputs or outputs. 
+
+![IO Configuration]https://github.com/jcassel/OctoPrint-Siocontrol/blob/main/extras/SettingsExampleIOConfig.PNG
+
 
 Add SIO configurations and they will apear on the side bar for interaction and monitoring:
 - select icon using icon picker (or typing manually) for easy identification
