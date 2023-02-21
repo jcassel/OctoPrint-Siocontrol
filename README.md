@@ -36,8 +36,6 @@ Simple selections for integrations
 - Enable and select IO point for physical EStop.
 - Enable and select IO point for Filament runout sensor.
 
-IO Point numbers and configurations must match the IO device firmware setup. In the [D1SerialIO firmware](https://github.com/jcassel/D1SerialIO) there are a total of 8 IO points. The [nanoSerialIO Firmware](https://github.com/jcassel/nanoSerialIO) has 20 digital points. All can configure each as either an input or an output. The OctoPrint-Serial IO Board I offer on Tindie has 2 relays and 6 other IO points that can be setup as either inputs or outputs. 
-
 ![IO Configuration](https://github.com/jcassel/OctoPrint-Siocontrol/blob/main/extras/SettingsExampleIOConfig.PNG)
 
 
@@ -51,8 +49,12 @@ Add SIO configurations and they will apear on the side bar for interaction and m
 - select if device should be on or off by default after/on startup.(Only applies to Outputs)
   - Off would mean that no command will be sent to the IO after start up. 
   - On would cause a command to set the Pin to its active level after start up of OctoPrint.
--Note that Configuration of a Pin makes it accessable in the sideNav. It is ok if the pin is used by the other integrations like PSUCorol. Inputs and outputs not configured at the device level from within OctoPrint. Misconfiguring a Pin in the interface will not change the pins type in the controller. To set the pins IO type see the directions for that device. The official example firmware repositories all have some general instructions on how to set IO point types either in the device code or as part of the readme. 
 
+
+### Note:
+Configuration of a Pin makes it accessable in the sideNav. It is ok if the pin is used by the other integrations like PSUCorol. Inputs and outputs not configured at the device level from within OctoPrint. Misconfiguring a Pin in the interface will not change the pins type in the controller. To set the pins IO type see the directions for that device. The official example firmware repositories all have some general instructions on how to set IO point types either in the device code or as part of the readme. 
+
+IO Point numbers and configurations must match the IO device firmware setup. In the [D1SerialIO firmware](https://github.com/jcassel/D1SerialIO) there are a total of 8 IO points. The [nanoSerialIO Firmware](https://github.com/jcassel/nanoSerialIO) has 20 digital points. All can configure each as either an input or an output. The OctoPrint-Serial IO Board I offer on Tindie has 2 relays and 6 other IO points that can be setup as either inputs or outputs. 
 
 
 
