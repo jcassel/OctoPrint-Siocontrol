@@ -38,7 +38,7 @@ Simple selections for integrations
 
 IO Point numbers and configurations must match the IO device firmware setup. In the [D1SerialIO firmware](https://github.com/jcassel/D1SerialIO) there are a total of 8 IO points. The [nanoSerialIO Firmware](https://github.com/jcassel/nanoSerialIO) has 20 digital points. All can configure each as either an input or an output. The OctoPrint-Serial IO Board I offer on Tindie has 2 relays and 6 other IO points that can be setup as either inputs or outputs. 
 
-![IO Configuration]https://github.com/jcassel/OctoPrint-Siocontrol/blob/main/extras/SettingsExampleIOConfig.PNG
+![IO Configuration](https://github.com/jcassel/OctoPrint-Siocontrol/blob/main/extras/SettingsExampleIOConfig.PNG)
 
 
 Add SIO configurations and they will apear on the side bar for interaction and monitoring:
