@@ -32,7 +32,7 @@
             <label class="control-label">PSU IO Point:</label>
             <div class="controls">
                 <input type="checkbox" class="input-block-level" data-bind="checked: SIO_EnablePSUIOPoint" >
-                <select data-bind="value: SIO_PSUIOPoint,options:SIO_IOCounts"></select>            
+                <input class="span6" type="number" data-bind="value: SIO_PSUIOPoint"/>
                 <input type="checkbox" class="input-block-level" data-bind="checked: SIO_InvertPSUIOPoint" > Invert ?
             </div>
         </div>  
@@ -41,14 +41,16 @@
             <label class="control-label">EStop IO Point:</label>
             <div class="controls">
                 <input type="checkbox" class="input-block-level" data-bind="checked: SIO_EnableESTIOPoint" >
-                <select data-bind="value: SIO_ESTIOPoint,options:SIO_IOCounts"></select>        
+                <!--<select data-bind="value: SIO_ESTIOPoint,options:SIO_IOCounts, optionsCaption: 'select...'"></select>-->
+                <input class="span6" type="number" data-bind="value: SIO_ESTIOPoint"/>
                 <input type="checkbox" class="input-block-level" data-bind="checked: SIO_InvertESTIOPoint" > Invert ?
             </div>    
 
             <label class="control-label">Filament Runout IO Point:</label>
             <div class="controls">
                 <input type="checkbox" class="input-block-level" data-bind="checked: SIO_EnableFRSIOPoint" >
-                <select data-bind="value: SIO_FRSIOPoint,options:SIO_IOCounts"></select>          
+                <!--<select data-bind="value: SIO_FRSIOPoint,options:SIO_IOCounts,optionsCaption: 'select...'"></select>-->
+                <input class="span6" type="number" data-bind="value: SIO_FRSIOPoint"/> 
                 <input type="checkbox" class="input-block-level" data-bind="checked: SIO_InvertFRSIOPoint" > Invert ?
             </div>    
         </div>
@@ -75,7 +77,8 @@
                     <input type="text" class="span12" data-bind="value: name"/>
                 </div>            
                 <div class="input-prepend span1">
-                    <select class="span12" data-bind="value: pin,options:$parent.SIO_IOCounts"></select>          
+                    <!--<select class="span12" data-bind="value: pin,options:$parent.SIO_IOCounts"></select>-->
+                    <input class="span12" type="number" data-bind="value: pin"/>
                 </div>
                 <div class="input-prepend span3">
                     <select class="btn-group span12" data-bind="value: active_mode">

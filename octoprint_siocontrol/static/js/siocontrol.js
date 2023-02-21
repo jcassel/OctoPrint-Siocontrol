@@ -17,18 +17,18 @@ $(function () {
         self.SIO_Ports = ko.observableArray();
         self.IOStatusMessage = ko.observable('Ready');
 
-        self.SIO_SI = "";
+        self.SIO_SI = 3001;
 
-        SIO_EnablePSUIOPoint = "";
-        SIO_PSUIOPoint = "";
+        SIO_EnablePSUIOPoint = 0;
+        SIO_PSUIOPoint = "-1";
         SIO_InvertPSUIOPoint = "";
 
-        SIO_EnableESTIOPoint = "";
-        SIO_ESTIOPoint = "";
+        SIO_EnableESTIOPoint = 0;
+        SIO_ESTIOPoint = "-1"
         SIO_InvertESTIOPoint = "";
 
-        SIO_EnableFRSIOPoint = "";
-        SIO_FRSIOPoint = "";
+        SIO_EnableFRSIOPoint = 0;
+        SIO_FRSIOPoint = "-1";
         SIO_InvertFRSIOPoint = "";
 
         SioButtonStatusUpdateInterval = 1000;
@@ -40,28 +40,9 @@ $(function () {
 
 
         self.onBeforeBinding = function () {
-            self.IOStatusMessage(self.settings.settings.plugins.siocontrol.IOStatusMessage());
-            self.SIO_Port = self.settings.settings.plugins.siocontrol.IOPort();
-            self.SIO_Ports(self.settings.settings.plugins.siocontrol.IOPorts());
-            //self.SIO_Ports.push("")
-            self.SIO_BaudRate = self.settings.settings.plugins.siocontrol.IOBaudRate();
-            self.SIO_BaudRates = self.settings.settings.plugins.siocontrol.IOBaudRates();
-            self.SIO_IOCounts(self.settings.settings.plugins.siocontrol.IOCounts());
-
-            self.SIO_SI = self.settings.settings.plugins.siocontrol.IOSI();
-            self.SIO_EnablePSUIOPoint = self.settings.settings.plugins.siocontrol.EnablePSUIOPoint();
-            self.SIO_PSUIOPoint = self.settings.settings.plugins.siocontrol.PSUIOPoint();
-            self.SIO_InvertPSUIOPoint = self.settings.settings.plugins.siocontrol.InvertPSUIOPoint();
-            self.SIO_EnableESTIOPoint = self.settings.settings.plugins.siocontrol.EnableESTIOPoint();
-            self.SIO_ESTIOPoint = self.settings.settings.plugins.siocontrol.ESTIOPoint();
-            self.SIO_InvertESTIOPoint = self.settings.settings.plugins.siocontrol.InvertESTIOPoint();
-            self.SIO_EnableFRSIOPoint = self.settings.settings.plugins.siocontrol.EnableFRSIOPoint();
-            self.SIO_FRSIOPoint = self.settings.settings.plugins.siocontrol.FRSIOPoint();
-            self.SIO_InvertFRSIOPoint = self.settings.settings.plugins.siocontrol.InvertFRSIOPoint();
             self.sioConfigurations(self.settings.settings.plugins.siocontrol.sio_configurations.slice(0));
-            console.log(self.SIO_Port); //here for debuging. Easy to get to binding packed js
 
-            //self.updateSioButtons();
+
             if (self.SIO_Port != null) {
                 if (self.SIO_IOCounts().length == 0) {
                     self.getIOCounts();
@@ -74,15 +55,39 @@ $(function () {
             }
 
 
+            self.IOStatusMessage(self.settings.settings.plugins.siocontrol.IOStatusMessage());
+            self.SIO_Port = self.settings.settings.plugins.siocontrol.IOPort();
+            self.SIO_Ports(self.settings.settings.plugins.siocontrol.IOPorts());
+            self.SIO_BaudRate = self.settings.settings.plugins.siocontrol.IOBaudRate();
+            self.SIO_BaudRates = self.settings.settings.plugins.siocontrol.IOBaudRates();
+            self.SIO_SI = self.settings.settings.plugins.siocontrol.IOSI();
+            self.SIO_EnablePSUIOPoint = self.settings.settings.plugins.siocontrol.EnablePSUIOPoint();
+            self.SIO_PSUIOPoint = self.settings.settings.plugins.siocontrol.PSUIOPoint();
+            self.SIO_InvertPSUIOPoint = self.settings.settings.plugins.siocontrol.InvertPSUIOPoint();
+            self.SIO_EnableESTIOPoint = self.settings.settings.plugins.siocontrol.EnableESTIOPoint();
+            self.SIO_ESTIOPoint = self.settings.settings.plugins.siocontrol.ESTIOPoint();
+            self.SIO_InvertESTIOPoint = self.settings.settings.plugins.siocontrol.InvertESTIOPoint();
+            self.SIO_EnableFRSIOPoint = self.settings.settings.plugins.siocontrol.EnableFRSIOPoint();
+            self.SIO_FRSIOPoint = self.settings.settings.plugins.siocontrol.FRSIOPoint();
+            self.SIO_InvertFRSIOPoint = self.settings.settings.plugins.siocontrol.InvertFRSIOPoint();
+
+
+            console.log(self.SIO_Port); //here for debuging. Easy to get to binding packed js
+
+
+
+
+
             setInterval(function () {
                 self.getStatusMessage();
-            }, self.SIO_SI * 2);
+            }, 5000);
 
 
 
             console.log(self.SIO_SI);
 
         };
+
 
         self.onSettingsBeforeSave = function () {
             self.settings.settings.plugins.siocontrol.sio_configurations(self.sioConfigurations.slice(0));
@@ -102,7 +107,7 @@ $(function () {
             self.settings.settings.plugins.siocontrol.ESTIOPoint(self.SIO_ESTIOPoint);
             self.settings.settings.plugins.siocontrol.InvertESTIOPoint(self.SIO_InvertESTIOPoint);
             self.settings.settings.plugins.siocontrol.EnableFRSIOPoint(self.SIO_EnableFRSIOPoint);
-            self.settings.settings.plugins.siocontrol.FRSIOPoint(self.SIO_InvertFRSIOPoint);
+            self.settings.settings.plugins.siocontrol.FRSIOPoint(self.SIO_FRSIOPoint);
             self.settings.settings.plugins.siocontrol.InvertFRSIOPoint(self.SIO_InvertFRSIOPoint);
             self.updateSioButtons();
             self.getIOCounts();

@@ -73,20 +73,20 @@ class SiocontrolPlugin(
         return dict(
             sio_configurations=[],
             PSUIOPoint="0",
+            EnablePSUIOPoint=False,
             InvertPSUIOPoint=False,
             ESTIOPoint="0",
-            InvertESTIOPoint=False,
-            IOSI="",
-            IOPort="",
-            IOBaudRate="",
-            IOBaudRates=["74880", "115200", "230400", "38400", "19200", "9600"],
-            IOPorts=[],
-            EnablePSUIOPoint=False,
             EnableESTIOPoint=False,
-            EnableFRSIOPoint=False,
+            InvertESTIOPoint=False,
             FRSIOPoint="0",
             InvertFRSIOPoint=False,
-            IOCount=100,
+            EnableFRSIOPoint=False,
+            IOSI=3000,
+            IOPort="",
+            IOBaudRate="115200",
+            IOBaudRates=["74880", "115200", "230400", "38400", "19200", "9600"],
+            IOPorts=[],
+            IOCounts=[],
             IOStatusMessage="Unknown Status",
         )
 
@@ -240,9 +240,9 @@ class SiocontrolPlugin(
 
     def getCounts(self):
         if self.conn.IOCount != 0:
-            counts = [k for k in range(0, self.conn.IOCount)]
+            counts = [str(k) for k in range(0, self.conn.IOCount)]
         else:
-            counts = []
+            counts = [str(k) for k in range(0, 99)]
         return counts
 
     def on_settings_save(self, data):
