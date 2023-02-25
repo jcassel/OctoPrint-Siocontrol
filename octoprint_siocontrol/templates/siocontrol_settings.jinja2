@@ -1,11 +1,12 @@
 <form class="form-horizontal">
     <h3>IO Connection Settings</h3>
+    <span class="text-error" data-bind="visible: SIO_Port()===undefined">You must save basic connection settings before you can connect.</span>
     <div class="control-group">
         <label class="control-label">Communications Port</label>
         <div class="controls">
-            <select data-bind="value: SIO_Port,options:SIO_Ports, optionsCaption: 'select...'"></select>
-            <button class="btn" data-bind="click: getPorts()" title="Refresh Connection Options"><i class="fas fa-sync"></i></button>
-            <button class="btn" data-bind="click: connectIO()" title="Connect"><i class="fas fa-assistive-listening-systems"></i></button>
+            <select data-bind="value: SIO_Port(),options:SIO_Ports, optionsCaption: 'select...'"></select>
+            <button class="btn" data-bind="click: getPorts" title="Refresh Connection Options"><i class="fas fa-sync"></i></button>
+            <button class="btn" data-bind="click: connectIO" title="Connect"><i class="fas fa-assistive-listening-systems"></i></button>
             <span data-bind="text: IOStatusMessage"></span>
         </div>
     </div>
@@ -26,7 +27,6 @@
             </select>
         </div>
     </div>
-    
     <div class="control-group" >
         <h3>PSUControl sub plugin integration</h3>
         <div class="control-group">

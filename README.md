@@ -60,7 +60,35 @@ Configuration of a Pin makes it accessable in the sideNav. It is ok if the pin i
 IO Point numbers and configurations must match the IO device firmware setup. In the [D1SerialIO firmware](https://github.com/jcassel/D1SerialIO) there are a total of 8 IO points. The [nanoSerialIO Firmware](https://github.com/jcassel/nanoSerialIO) has 20 digital points. All can configure each as either an input or an output. The OctoPrint-Serial IO Board I offer on Tindie has 2 relays and 6 other IO points that can be setup as either inputs or outputs. 
 
 
+## SIO Serial Commands 
+
+All commands must end with a new line character (\n) If the command is recognized as a valid command the device will respond with an "OK" as an Ack. if it is not recognized, it will return an error in the format of: if command "AA" is sent to the device.A return code of: "ERROR: Unrecognized command[AA]\n" will be sent.
+
+- BIO Begin AutoReporting IO status (only needed if EIO has been called.) 
+
+- EIO Pause/End IO Status Autoreporting. This setting is not maintained through restarts of the device.
+
+- IC returns the number of IO points being monitored. 
+
+- debug [0/1] turns on[1] or off[0] debug output. Should not be used while connected to Octoprint SIOControl. This setting is not maintained through restarts of the device.
+
+- CIO [io pattern] The [io pattern]  is an string of integers as a single value. For example: 0000111111 (this sets the first 4 io points to inputs and the last 6 to output.) There are 4 posible values that can be used for each type. 0=input, 1=output, 2 input_Pullup, 3 input_pulldown, Output_open_drain. Not all devices support all of the types listed. 0-2 are supported in most cases. This setting is not maintained through restarts of the device unless settings are stored using SIO command.
+
+- SIO Stores current IO point type settings to local storage. This causes the current IO point types to be maintained through restarts of the device.
+
+- IOT outputs the current IO Point types pattern
+
+- IO [#] [0/1] Sets an IO point {#:position in IO pattern] to a logic level [0:low] [1:HIGH]. Example: "IO 9 1" will set the iopoint 9 to High 
+
+- SI [500-4,294,967,295]  .5 seconds to ~1,193 hours realisticly you would want this setting to be no less than 10,000 or 10 seconds to ensure generaly acceptable feedback on changes made to the IO.
 
 
-Thank you to the developers of [GpoiControl(@catgiggle)](https://github.com/catgiggle/OctoPrint-GpioControl) and [PSUControl(kantlivelong)](https://github.com/kantlivelong/OctoPrint-PSUControl) for giving me a lot of insparation on how this looks and works. A lot of the initial code for this was directly pulled from GPIO Control as a starting point. 
+
+## Recognition where due
+Thank you to the other plugin developers doing great work in this space. 
+- [GpoiControl(@catgiggle)](https://github.com/catgiggle/OctoPrint-GpioControl) A lot of the initial code for this was directly pulled from GPIO Control as a starting point. 
+  
+- [PSUControl(kantlivelong)](https://github.com/kantlivelong/OctoPrint-PSUControl) A well known and well used bit of code that I knew I could rely on as a good example of what to do.
+  
+- [jneilliii](https://github.com/jneilliii) so many great Plugins. The BedLevelVisualizer specificly was very helpful in working out how to deail with core ViewModels. 
 

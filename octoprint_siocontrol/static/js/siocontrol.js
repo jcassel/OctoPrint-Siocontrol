@@ -16,7 +16,7 @@ $(function () {
         self.SIO_IOCounts = ko.observableArray();
         self.SIO_BaudRate = "";
         self.SIO_BaudRates = [];
-        self.SIO_Port = "";
+        self.SIO_Port = ko.observable('');
         self.SIO_Ports = ko.observableArray();
         self.IOStatusMessage = ko.observable('Ready');
 
@@ -59,7 +59,7 @@ $(function () {
 
 
             self.IOStatusMessage(self.settingsViewModel.settings.plugins.siocontrol.IOStatusMessage());
-            self.SIO_Port = self.settingsViewModel.settings.plugins.siocontrol.IOPort();
+            self.SIO_Port(self.settingsViewModel.settings.plugins.siocontrol.IOPort());
             self.SIO_Ports(self.settingsViewModel.settings.plugins.siocontrol.IOPorts());
             self.SIO_BaudRate = self.settingsViewModel.settings.plugins.siocontrol.IOBaudRate();
             self.SIO_BaudRates = self.settingsViewModel.settings.plugins.siocontrol.IOBaudRates();
@@ -74,18 +74,11 @@ $(function () {
             self.SIO_FRSIOPoint = self.settingsViewModel.settings.plugins.siocontrol.FRSIOPoint();
             self.SIO_InvertFRSIOPoint = self.settingsViewModel.settings.plugins.siocontrol.InvertFRSIOPoint();
 
-
-            console.log(self.SIO_Port); //here for debuging. Easy to get to binding packed js
-
-
-
-
+            console.log(self.SIO_Port()); //here for debuging. Easy to get to binding packed js
 
             setInterval(function () {
                 self.getStatusMessage();
             }, 5000);
-
-
 
             console.log(self.SIO_SI);
 
@@ -99,7 +92,7 @@ $(function () {
 
         self.onSettingsBeforeSave = function () {
             self.settingsViewModel.settings.plugins.siocontrol.sio_configurations(self.sioConfigurations.slice(0));
-            self.settingsViewModel.settings.plugins.siocontrol.IOPort(self.SIO_Port);
+            self.settingsViewModel.settings.plugins.siocontrol.IOPort(self.SIO_Port());
             self.settingsViewModel.settings.plugins.siocontrol.IOBaudRate(self.SIO_BaudRate);
             if (self.SIO_SI != self.settingsViewModel.settings.plugins.siocontrol.IOSI()) {
                 clearInterval(SioBtnInterval); //stop existing polling.
@@ -145,8 +138,6 @@ $(function () {
             if (self.SIO_IOCounts().length == 0) {
                 self.requestIOCounts();
             }
-
-
 
             OctoPrint.simpleApiGet("siocontrol").then(function (states) {
                 updateBtns = false;
@@ -195,7 +186,7 @@ $(function () {
         };
 
         self.connectIO = function () {
-            OctoPrint.simpleApiCommand("siocontrol", "connectIO", {}).then(function (connected) {
+            OctoPrint.simpleApiCommand("siocontrol", "connectIO", { port: self.SIO_Port(), baudRate: self.SIO_BaudRate, si: self.SIO_SI }).then(function (connected) {
                 //no need to do anything the status will update. 
             });
         };
@@ -223,11 +214,17 @@ $(function () {
 
 
         self.turnSioOn = function () {
-            OctoPrint.simpleApiCommand("siocontrol", "turnSioOn", { id: self.sioButtons.indexOf(this) });
+            OctoPrint.simpleApiCommand("siocontrol", "turnSioOn", { id: self.sioButtons.indexOf(this) }).then(function (state) {
+                //self.sioButtons.indexOf(this)["current_state"] = state;
+            });
+            self.updateSioButtons();
         }
 
         self.turnSioOff = function () {
-            OctoPrint.simpleApiCommand("siocontrol", "turnSioOff", { id: self.sioButtons.indexOf(this) });
+            OctoPrint.simpleApiCommand("siocontrol", "turnSioOff", { id: self.sioButtons.indexOf(this) }).then(function (state) {
+                //self.sioButtons.indexOf(this)["current_state"] = state;
+            });
+            self.updateSioButtons();
         }
 
         self.getBtnCls = function () {

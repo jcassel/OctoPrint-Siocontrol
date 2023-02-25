@@ -1,14 +1,15 @@
 # coding=utf-8
 from __future__ import absolute_import, print_function
 
-from time import sleep, time
-
 import flask
 
 import octoprint.plugin
-from octoprint.server import user_permission
+from octoprint.access.permissions import Permissions
 
 from . import Connection
+
+# from time import sleep, time
+
 
 ### (Don't forget to remove me)
 # This is a basic skeleton for your plugin's __init__.py. You probably want to adjust the class name of your plugin
@@ -35,7 +36,20 @@ class SiocontrolPlugin(
         return
 
     def get_template_vars(self):
-        avalIOSI = ["500", "1000", "1500", "2000", "3000", "4000"]
+        avalIOSI = [
+            "500",
+            "1000",
+            "1500",
+            "2000",
+            "3000",
+            "4000",
+            "5000",
+            "6000",
+            "7000",
+            "8000",
+            "9000",
+            "10000",
+        ]
         self._settings.set(["IOPorts"], self.conn.serialList())
         self._settings.set(["IOCounts"], self.getCounts())
 
@@ -128,18 +142,17 @@ class SiocontrolPlugin(
             pin = int(configuration["pin"])
 
             if pin != -1:
-                # SIO.setup(pin, GPIO.OUT)
 
                 if configuration["active_mode"] == "active_out_low":
                     if configuration["default_state"] == "default_on":
-                        self.conn.send(f"IO {pin} 0")  # GPIO.output(pin, GPIO.LOW)
+                        self.conn.send(f"IO {pin} 0")
                     elif configuration["default_state"] == "default_off":
-                        self.conn.send(f"IO {pin} 1")  # GPIO.output(pin, GPIO.HIGH)
+                        self.conn.send(f"IO {pin} 1")
                 elif configuration["active_mode"] == "active_out_high":
                     if configuration["default_state"] == "default_on":
-                        self.conn.send(f"IO {pin} 1")  # GPIO.output(pin, GPIO.HIGH)
+                        self.conn.send(f"IO {pin} 1")
                     elif configuration["default_state"] == "default_off":
-                        self.conn.send(f"IO {pin} 0")  # GPIO.output(pin, GPIO.LOW)
+                        self.conn.send(f"IO {pin} 0")
         return
 
     def on_after_startup(self, *args, **kwargs):
@@ -151,7 +164,7 @@ class SiocontrolPlugin(
         if self.conn.is_connected():
             self._logger.info("Connected to Serial IO")
             self.IOStatus = "Connected"
-
+            self.conn.send("SI " + self._settings.get(["IOSI"]))
             self.setStartUpIO()
         else:
             self.IOStatus = "Could not connect Serial IO"
@@ -180,11 +193,15 @@ class SiocontrolPlugin(
             getPorts="",
             getIOCounts="",
             getStatusMessage="",
-            connectIO="",
+            connectIO=["port", "baudRate", "si"],
         )
 
     def on_api_command(self, command, data):
         if command == "connectIO":
+            self._settings.set(["IOSI"], data["si"])
+            self._settings.set(["IOBaudRate"], data["baudRate"])
+            self._settings.set(["IOPort"], data["port"])
+
             if self.conn.is_connected():
                 self.conn.stopCommThreads()
                 self.conn.disconnect()
@@ -192,6 +209,7 @@ class SiocontrolPlugin(
             self.conn.connect()
             if self.conn.is_connected():
                 self._logger.info("Connected")
+                self.conn.send("SI " + self._settings.get(["IOSI"]))
             else:
                 self._logger.error("Could not connect to SIO.")
 
@@ -222,14 +240,27 @@ class SiocontrolPlugin(
                 return rtnJ
 
         elif command == "turnSioOn":
-            if pin > 0:
+
+            if Permissions.CONTROL.can() and pin > 0:
                 if self.conn.is_connected():
                     self._logger.info("Turned on SIO{}".format(configuration["pin"]))
 
                     if configuration["active_mode"] == "active_out_low":
                         self.conn.send(f"IO {pin} 0")
+
+                        if self.IOCurrent[pin] == "0":
+                            return flask.jsonify("state: on")
+                        else:
+                            return flask.jsonify("state: off")
+
                     elif configuration["active_mode"] == "active_out_high":
                         self.conn.send(f"IO {pin} 1")
+
+                        if self.IOCurrent[pin] == "1":
+                            return flask.jsonify("state: on")
+                        else:
+                            return flask.jsonify("state: off")
+
                 else:
                     self._logger.info(
                         "Not connected ignored IO command on Pin{}".format(pin)
@@ -239,14 +270,20 @@ class SiocontrolPlugin(
             if pin > 0:
                 if self.conn.is_connected():
                     self._logger.info("Turned off SIO{}".format(configuration["pin"]))
-                    if (
-                        configuration["active_mode"] == "active_out_low"
-                        or configuration["active_mode"] == "active_out_high"
-                    ):
-                        if configuration["active_mode"] == "active_out_low":
-                            self.conn.send(f"IO {pin} 1")
-                        elif configuration["active_mode"] == "active_out_high":
-                            self.conn.send(f"IO {pin} 0")
+                    if configuration["active_mode"] == "active_out_low":
+                        self.conn.send(f"IO {pin} 1")
+                        if self.IOCurrent[pin] == "1":
+                            return flask.jsonify("state: off")
+                        else:
+                            return flask.jsonify("state: on")
+
+                    elif configuration["active_mode"] == "active_out_high":
+                        self.conn.send(f"IO {pin} 0")
+                        if self.IOCurrent[pin] == "0":
+                            return flask.jsonify("state: off")
+                        else:
+                            return flask.jsonify("state: on")
+
                 else:
                     self._logger.info(
                         "Not connected ignored IO command on Pin{}".format(pin)
