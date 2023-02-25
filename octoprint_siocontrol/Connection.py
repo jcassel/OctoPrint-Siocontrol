@@ -37,16 +37,24 @@ class Connection:
         self._settings = plugin._settings
         self.plugin = plugin
         self.readThread = None
+        self.pauseReadThread = False
         self.readThreadStop = False
+        self.writeThread = None
+        self.pauseWriteThread = False
+        self.writeThreadStop = False
+
         self._connected = False
         self.serialConn = None
         self.gCodeExtrusion = 0
         self.boxExtrusion = 0
         self.boxExtrusionOffset = 0
         self.IOCount = 0
+        self.commandQueue = []
+        self.enableCommandQueue = False
 
     def disconnect(self):
-
+        self.commandQueue = []  # empty command queue
+        self._logger.info("cleared Command queue")
         while self.serialConn.is_open:
             self.serialConn.close()
             time.sleep(1)
@@ -66,15 +74,17 @@ class Connection:
                 self.serialConn = serial.Serial(
                     self._settings.get(["IOPort"]),
                     int(self._settings.get(["IOBaudRate"])),
-                    timeout=0.5,
+                    timeout=1,
                 )
 
                 if self.serialConn.is_open:
+                    self.commandQueue = []
+                    self._logger.info("cleared Command queue")
                     self._connected = True
                     # self.send("BIO")  # request io
                     self.plugin.IOStatus = "Connected"
                     self._logger.info("Starting read thread...")
-                    self.startReadThread()
+                    self.startCommThreads()
                 else:
                     self.plugin.IOStatus = "Could not connect to SIO"
             else:
@@ -85,6 +95,8 @@ class Connection:
                 self._connected = False
 
         except serial.SerialException as err:
+            self.commandQueue = []
+            self._logger.info("cleared Command queue")
             self._logger.info("Connection failed!")
             self._logger.exception(f"Serial Exception: {err=}, {type(err)=}")
         except Exception as err:
@@ -133,54 +145,115 @@ class Connection:
             self._printer.commands(["M112"])
 
     def send(self, data):
-        self._logger.info("Sending: %s" % data)
-        # data = data + "\n"
-        self.serialConn.write(data.encode())
+        self.commandQueue.append(f"{data}\n".encode())
+        self._logger.info("Queueing Command: %s" % data)
 
-    def read_thread(self, serialConnection):
-        errorCount = 0
-        self._logger.info("Read Thread: Starting thread")
-        while self.readThreadStop is False:
+    def write_thread(self, serialConnection):
+        pauseWasSent = False
+        while self.is_connected and self.readThreadStop is False:
             try:
-                line = serialConnection.readline()
-                if line:
-                    try:
-                        line = line.strip().decode()
-                    except Exception:
-                        pass
+                time.sleep(0.25)
+                if self.enableCommandQueue is True and len(self.commandQueue) > 0:
+                    self.pauseReadThread = True
+                    if len(self.commandQueue) > 1 and pauseWasSent is False:
+                        serialConnection.reset_input_buffer()
+                        serialConnection.write("EIO\n".encode())
+                        command = "EIO-NoPop"
+                        pauseWasSent = True
+                    else:
+                        command = self.commandQueue[0]
+                        serialConnection.write(command)
+                        self._logger.info(f"SOI Sent:{command=}")
 
-                    if line[:2] == "IO":
-                        self._logger.info(f"IO Reported State as:{line=}")
-                        self.plugin.IOCurrent = line[3:]
-                        self.IOCount = len(self.plugin.IOCurrent)
-                        self.checkActionIO()
-                        errorCount = 0
+                    time.sleep(0.1)
+                    line = serialConnection.readline()
+                    if line:
+                        try:
+                            line = line.strip().decode()
+                        except Exception:
+                            pass
+                        self._logger.info(f">IO Responded with:{line=}")
+                        if line[:2] == "OK" and command != "EIO-NoPop":
+                            pcommand = self.commandQueue.pop(0)
+                            self._logger.info("Poped Command: %s" % pcommand)
+                            # errorCount = 0
 
-                    if line[:2] == "OK":
-                        self._logger.info(f"IO Responded with:{line=}")
-                        errorCount = 0
+                else:
+                    if pauseWasSent is True:
+                        pauseWasSent = False
+                        serialConnection.write("BIO\n".encode())
+                        self._logger.info("SOI Sent:BIO")
 
-                    if line[:2] == "IC":  # explicit report IO count.
-                        self.IOCount = int(line[3:])
-                        errorCount = 0
-
-                    if line[:2] != "OK" and line[:2] != "IO" and line[:2] != "IC":
-                        self._logger.info(f"IO sent:{line=}")  # error?
-                        errorCount = errorCount + 1
-                        if errorCount > 9:
-                            self.plugin.IOCurrent = ""
-                            self.IOCount = 0
-                            self.disconnect()
-                            self._connected = False
-                            self._logger.error("Too many Comm Errors disconnecting IO")
-                            self.stopReadThread()
-                            self.plugin.IOStatus = "COMM ERROR"
+                    self.pauseReadThread = False
 
             except serial.SerialException:
                 self.disconnect()
                 self._connected = False
                 self._logger.error("error reading from USB")
-                self.stopReadThread()
+                self.stopCommThreads()
+
+        self._logger.info("Write Thread: Thread stopped.")
+
+    def read_thread(self, serialConnection):
+        errorCount = 0
+        self._logger.info("Read Thread: Starting thread")
+        self.enableCommandQueue = False
+        while self.readThreadStop is False:
+            try:
+                if (
+                    len(self.commandQueue) == 0 or self.enableCommandQueue is False
+                ) and self.pauseReadThread is False:
+                    line = serialConnection.readline()
+                    if line:
+                        try:
+                            line = line.strip().decode()
+                        except Exception:
+                            pass
+
+                        if line[:2] == "IO":
+                            self._logger.info(f"IO Reported State as:{line=}")
+                            self.plugin.IOCurrent = line[3:]
+                            self.IOCount = len(self.plugin.IOCurrent)
+                            self.checkActionIO()
+                            errorCount = 0
+
+                        if line[:2] == "OK":
+                            self._logger.info(f"IO Responded with:{line=}")
+                            errorCount = 0
+
+                        if line[:2] == "IC":  # explicit report IO count.
+                            self.IOCount = int(line[3:])
+                            errorCount = 0
+
+                        if line[:2] == "RR":  # IO ready for commands
+                            self._logger.info(f"IO claimed ready for commands:{line=}")
+                            self.enableCommandQueue = True
+
+                        if (
+                            line[:2] != "OK"
+                            and line[:2] != "IO"
+                            and line[:2] != "IC"
+                            and line[:2] != "RR"
+                        ):
+                            self._logger.info(f"IO sent:{line=}")  # error?
+                            errorCount = errorCount + 1
+                            if errorCount > 9:
+                                self.plugin.IOCurrent = ""
+                                self.IOCount = 0
+                                self.disconnect()
+                                self._connected = False
+                                self._logger.error(
+                                    "Too many Comm Errors disconnecting IO"
+                                )
+                                self.stopCommThreads()
+                                self.plugin.IOStatus = "COMM ERROR"
+                else:
+                    time.sleep(0.25)  # time for write thread to do work.
+            except serial.SerialException:
+                self.disconnect()
+                self._connected = False
+                self._logger.error("error reading from USB")
+                self.stopCommThreads()
 
         self._logger.info("Read Thread: Thread stopped.")
 
@@ -288,7 +361,7 @@ class Connection:
             else:
                 return False
 
-    def startReadThread(self):
+    def startCommThreads(self):
         if self.readThread is None:
             self.readThreadStop = False
             self.readThread = threading.Thread(
@@ -297,11 +370,26 @@ class Connection:
             self.readThread.daemon = True
             self.readThread.start()
 
-    def stopReadThread(self):
+        if self.writeThread is None:
+            self.writeThreadStop = False
+            self.writeThread = threading.Thread(
+                target=self.write_thread, args=(self.serialConn,)
+            )
+            self.writeThread.daemon = True
+            self.writeThread.start()
+
+    def stopCommThreads(self):
         self.readThreadStop = True
         if self.readThread and threading.current_thread() != self.readThread:
             self.readThread.join()
+
         self.readThread = None
+
+        self.writeThreadStop = True
+        if self.writeThread and threading.current_thread() != self.writeThread:
+            self.writeThread.join()
+
+        self.writeThread = None
 
     def is_connected(self):
         return self._connected

@@ -1,19 +1,30 @@
+
 <div class="row-fluid" data-bind="foreach: sioButtons">
     <div class="siocontrol-button-row row-fluid">
         <div class="siocontrol-button-label span7">
             <i data-bind="class: icon"></i>
             <span data-bind="text: name"></span>
         </div>
-        <div class="siocontrol-button-controls input-prepend input-append span5" data-bind="visible: active_mode =='active_out_low' || active_mode =='active_out_high' " >
+        
+        <div class="siocontrol-button-controls input-prepend input-append span5" data-bind="visible: $parent.hasControlPermission() && (active_mode =='active_out_low' || active_mode =='active_out_high')" >
             <button class="btn" data-toggle="dropdown" data-bind="click: $parent.turnSioOn, attr : {'disabled' : current_state != 'off'}">ON</button>
             <button class="btn" data-toggle="dropdown" data-bind="click: $parent.turnSioOff, attr : {'disabled' : current_state != 'on'}">OFF</button>
         </div>
-        <div class="siocontrol-button-controls input-prepend input-append span5" data-bind="visible: active_mode =='active_in_low' || active_mode =='active_in_high' " >
+        <div class="siocontrol-button-controls input-prepend input-append span5" data-bind="visible: $parent.hasControlPermission() && (active_mode =='active_in_low' || active_mode =='active_in_high')" >
             <div class="btn span5 siofntGrn" data-bind="visible: current_state =='on'"><i class="fas fa-toggle-on"></i></div>
             <div class="btn span5 siofntblk" data-bind="visible: current_state =='off'"><i class="fas fa-toggle-off"></i></div>
         </div>        
+    
+        
+        <div class="siocontrol-button-controls input-prepend input-append span5" data-bind="visible: !$parent.hasControlPermission()" >
+            <div class="btn span5 siofntGrn" data-bind="visible: current_state =='on'"><i class="fas fa-toggle-on"></i></div>
+            <div class="btn span5 siofntblk" data-bind="visible: current_state =='off'"><i class="fas fa-toggle-off"></i></div>
+        </div>        
+        
     </div>
 </div>
-<div >
-    <span data-bind="text: IOStatusMessage"></span>
+<div class="row-fluid">
+    <button class="btn btn-mini pull-left" data-bind="click: connectIO(),visible: hasControlPermission()" title="Connect"><i class="fas fa-assistive-listening-systems"></i></button>
+    <span class="span4" data-bind="text: IOStatusMessage"></span>
+    <button class="btn btn-mini pull-right" data-bind="click: function(){ settingsViewModel.show('#settings_plugin_siocontrol'); }, visible: hasControlPermission()" style=""><i class="fa fa-gear"></i></button>
 </div>

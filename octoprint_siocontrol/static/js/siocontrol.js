@@ -7,7 +7,10 @@
 $(function () {
     function SioControlViewModel(parameters) {
         var self = this;
-        self.settings = parameters[0];
+        self.settingsViewModel = parameters[0];
+        self.controlViewModel = parameters[1];
+        self.loginStateViewModel = parameters[2];
+        self.accessViewModel = parameters[3];
         self.sioButtons = ko.observableArray();
         self.sioConfigurations = ko.observableArray();
         self.SIO_IOCounts = ko.observableArray();
@@ -40,7 +43,7 @@ $(function () {
 
 
         self.onBeforeBinding = function () {
-            self.sioConfigurations(self.settings.settings.plugins.siocontrol.sio_configurations.slice(0));
+            self.sioConfigurations(self.settingsViewModel.settings.plugins.siocontrol.sio_configurations.slice(0));
 
 
             if (self.SIO_Port != null) {
@@ -55,21 +58,21 @@ $(function () {
             }
 
 
-            self.IOStatusMessage(self.settings.settings.plugins.siocontrol.IOStatusMessage());
-            self.SIO_Port = self.settings.settings.plugins.siocontrol.IOPort();
-            self.SIO_Ports(self.settings.settings.plugins.siocontrol.IOPorts());
-            self.SIO_BaudRate = self.settings.settings.plugins.siocontrol.IOBaudRate();
-            self.SIO_BaudRates = self.settings.settings.plugins.siocontrol.IOBaudRates();
-            self.SIO_SI = self.settings.settings.plugins.siocontrol.IOSI();
-            self.SIO_EnablePSUIOPoint = self.settings.settings.plugins.siocontrol.EnablePSUIOPoint();
-            self.SIO_PSUIOPoint = self.settings.settings.plugins.siocontrol.PSUIOPoint();
-            self.SIO_InvertPSUIOPoint = self.settings.settings.plugins.siocontrol.InvertPSUIOPoint();
-            self.SIO_EnableESTIOPoint = self.settings.settings.plugins.siocontrol.EnableESTIOPoint();
-            self.SIO_ESTIOPoint = self.settings.settings.plugins.siocontrol.ESTIOPoint();
-            self.SIO_InvertESTIOPoint = self.settings.settings.plugins.siocontrol.InvertESTIOPoint();
-            self.SIO_EnableFRSIOPoint = self.settings.settings.plugins.siocontrol.EnableFRSIOPoint();
-            self.SIO_FRSIOPoint = self.settings.settings.plugins.siocontrol.FRSIOPoint();
-            self.SIO_InvertFRSIOPoint = self.settings.settings.plugins.siocontrol.InvertFRSIOPoint();
+            self.IOStatusMessage(self.settingsViewModel.settings.plugins.siocontrol.IOStatusMessage());
+            self.SIO_Port = self.settingsViewModel.settings.plugins.siocontrol.IOPort();
+            self.SIO_Ports(self.settingsViewModel.settings.plugins.siocontrol.IOPorts());
+            self.SIO_BaudRate = self.settingsViewModel.settings.plugins.siocontrol.IOBaudRate();
+            self.SIO_BaudRates = self.settingsViewModel.settings.plugins.siocontrol.IOBaudRates();
+            self.SIO_SI = self.settingsViewModel.settings.plugins.siocontrol.IOSI();
+            self.SIO_EnablePSUIOPoint = self.settingsViewModel.settings.plugins.siocontrol.EnablePSUIOPoint();
+            self.SIO_PSUIOPoint = self.settingsViewModel.settings.plugins.siocontrol.PSUIOPoint();
+            self.SIO_InvertPSUIOPoint = self.settingsViewModel.settings.plugins.siocontrol.InvertPSUIOPoint();
+            self.SIO_EnableESTIOPoint = self.settingsViewModel.settings.plugins.siocontrol.EnableESTIOPoint();
+            self.SIO_ESTIOPoint = self.settingsViewModel.settings.plugins.siocontrol.ESTIOPoint();
+            self.SIO_InvertESTIOPoint = self.settingsViewModel.settings.plugins.siocontrol.InvertESTIOPoint();
+            self.SIO_EnableFRSIOPoint = self.settingsViewModel.settings.plugins.siocontrol.EnableFRSIOPoint();
+            self.SIO_FRSIOPoint = self.settingsViewModel.settings.plugins.siocontrol.FRSIOPoint();
+            self.SIO_InvertFRSIOPoint = self.settingsViewModel.settings.plugins.siocontrol.InvertFRSIOPoint();
 
 
             console.log(self.SIO_Port); //here for debuging. Easy to get to binding packed js
@@ -89,37 +92,42 @@ $(function () {
         };
 
 
+        self.hasControlPermission = function () {
+            return self.loginStateViewModel.hasPermission(self.accessViewModel.permissions.CONTROL);
+        };
+
+
         self.onSettingsBeforeSave = function () {
-            self.settings.settings.plugins.siocontrol.sio_configurations(self.sioConfigurations.slice(0));
-            self.settings.settings.plugins.siocontrol.IOPort(self.SIO_Port);
-            self.settings.settings.plugins.siocontrol.IOBaudRate(self.SIO_BaudRate);
-            if (self.SIO_SI != self.settings.settings.plugins.siocontrol.IOSI()) {
+            self.settingsViewModel.settings.plugins.siocontrol.sio_configurations(self.sioConfigurations.slice(0));
+            self.settingsViewModel.settings.plugins.siocontrol.IOPort(self.SIO_Port);
+            self.settingsViewModel.settings.plugins.siocontrol.IOBaudRate(self.SIO_BaudRate);
+            if (self.SIO_SI != self.settingsViewModel.settings.plugins.siocontrol.IOSI()) {
                 clearInterval(SioBtnInterval); //stop existing polling.
                 SioBtnInterval = setInterval(function () { //start the updated one.
                     self.updateSioButtons();
                 }, self.SIO_SI);
             }
-            self.settings.settings.plugins.siocontrol.IOSI(self.SIO_SI); //alwasy update
-            self.settings.settings.plugins.siocontrol.EnablePSUIOPoint(self.SIO_EnablePSUIOPoint);
-            self.settings.settings.plugins.siocontrol.PSUIOPoint(self.SIO_PSUIOPoint);
-            self.settings.settings.plugins.siocontrol.InvertPSUIOPoint(self.SIO_InvertPSUIOPoint);
-            self.settings.settings.plugins.siocontrol.EnableESTIOPoint(self.SIO_EnableESTIOPoint);
-            self.settings.settings.plugins.siocontrol.ESTIOPoint(self.SIO_ESTIOPoint);
-            self.settings.settings.plugins.siocontrol.InvertESTIOPoint(self.SIO_InvertESTIOPoint);
-            self.settings.settings.plugins.siocontrol.EnableFRSIOPoint(self.SIO_EnableFRSIOPoint);
-            self.settings.settings.plugins.siocontrol.FRSIOPoint(self.SIO_FRSIOPoint);
-            self.settings.settings.plugins.siocontrol.InvertFRSIOPoint(self.SIO_InvertFRSIOPoint);
+            self.settingsViewModel.settings.plugins.siocontrol.IOSI(self.SIO_SI); //alwasy update
+            self.settingsViewModel.settings.plugins.siocontrol.EnablePSUIOPoint(self.SIO_EnablePSUIOPoint);
+            self.settingsViewModel.settings.plugins.siocontrol.PSUIOPoint(self.SIO_PSUIOPoint);
+            self.settingsViewModel.settings.plugins.siocontrol.InvertPSUIOPoint(self.SIO_InvertPSUIOPoint);
+            self.settingsViewModel.settings.plugins.siocontrol.EnableESTIOPoint(self.SIO_EnableESTIOPoint);
+            self.settingsViewModel.settings.plugins.siocontrol.ESTIOPoint(self.SIO_ESTIOPoint);
+            self.settingsViewModel.settings.plugins.siocontrol.InvertESTIOPoint(self.SIO_InvertESTIOPoint);
+            self.settingsViewModel.settings.plugins.siocontrol.EnableFRSIOPoint(self.SIO_EnableFRSIOPoint);
+            self.settingsViewModel.settings.plugins.siocontrol.FRSIOPoint(self.SIO_FRSIOPoint);
+            self.settingsViewModel.settings.plugins.siocontrol.InvertFRSIOPoint(self.SIO_InvertFRSIOPoint);
             self.updateSioButtons();
             self.getIOCounts();
         };
 
         self.onSettingsShown = function () {
-            self.sioConfigurations(self.settings.settings.plugins.siocontrol.sio_configurations.slice(0));
+            self.sioConfigurations(self.settingsViewModel.settings.plugins.siocontrol.sio_configurations.slice(0));
             self.updateIconPicker();
         };
 
         self.onSettingsHidden = function () {
-            self.sioConfigurations(self.settings.settings.plugins.siocontrol.sio_configurations.slice(0));
+            self.sioConfigurations(self.settingsViewModel.settings.plugins.siocontrol.sio_configurations.slice(0));
             //self.updateSioButtons();
         };
 
@@ -184,7 +192,13 @@ $(function () {
             OctoPrint.simpleApiCommand("siocontrol", "getStatusMessage", {}).then(function (status) {
                 self.IOStatusMessage(status);
             });
-        }
+        };
+
+        self.connectIO = function () {
+            OctoPrint.simpleApiCommand("siocontrol", "connectIO", {}).then(function (connected) {
+                //no need to do anything the status will update. 
+            });
+        };
 
         self.getIOCounts = function () {
             //self.requestIOCounts();
@@ -244,7 +258,7 @@ $(function () {
 
     OCTOPRINT_VIEWMODELS.push({
         construct: SioControlViewModel,
-        dependencies: ["settingsViewModel"],
+        dependencies: ["settingsViewModel", "controlViewModel", "loginStateViewModel", "accessViewModel"],
         elements: ["#settings_plugin_siocontrol", "#sidebar_plugin_siocontrol"]
     });
 });

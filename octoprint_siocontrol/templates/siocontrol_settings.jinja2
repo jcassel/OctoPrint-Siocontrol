@@ -4,8 +4,9 @@
         <label class="control-label">Communications Port</label>
         <div class="controls">
             <select data-bind="value: SIO_Port,options:SIO_Ports, optionsCaption: 'select...'"></select>
-            
-            <button class="btn" data-bind="click: getPorts()"><i class="fas fa-sync"></i></button>
+            <button class="btn" data-bind="click: getPorts()" title="Refresh Connection Options"><i class="fas fa-sync"></i></button>
+            <button class="btn" data-bind="click: connectIO()" title="Connect"><i class="fas fa-assistive-listening-systems"></i></button>
+            <span data-bind="text: IOStatusMessage"></span>
         </div>
     </div>
     <div class="control-group">
@@ -26,32 +27,32 @@
         </div>
     </div>
     
-    <div class="control-group" data-bind="visible: SIO_IOCounts().length > 0">
+    <div class="control-group" >
         <h3>PSUControl sub plugin integration</h3>
         <div class="control-group">
             <label class="control-label">PSU IO Point:</label>
             <div class="controls">
-                <input type="checkbox" class="input-block-level" data-bind="checked: SIO_EnablePSUIOPoint" >
+                <input type="checkbox" class="input-block-level" title="enable" data-bind="checked: SIO_EnablePSUIOPoint" >
                 <input class="span6" type="number" data-bind="value: SIO_PSUIOPoint"/>
-                <input type="checkbox" class="input-block-level" data-bind="checked: SIO_InvertPSUIOPoint" > Invert ?
+                <input type="checkbox" class="input-block-level" data-bind="checked: SIO_InvertPSUIOPoint" > Active LOW ?
             </div>
         </div>  
         <h3>Simple Integrations</h3> 
         <div class="control-group">
             <label class="control-label">EStop IO Point:</label>
             <div class="controls">
-                <input type="checkbox" class="input-block-level" data-bind="checked: SIO_EnableESTIOPoint" >
+                <input type="checkbox" class="input-block-level" title="enable" data-bind="checked: SIO_EnableESTIOPoint" >
                 <!--<select data-bind="value: SIO_ESTIOPoint,options:SIO_IOCounts, optionsCaption: 'select...'"></select>-->
                 <input class="span6" type="number" data-bind="value: SIO_ESTIOPoint"/>
-                <input type="checkbox" class="input-block-level" data-bind="checked: SIO_InvertESTIOPoint" > Invert ?
+                <input type="checkbox" class="input-block-level" data-bind="checked: SIO_InvertESTIOPoint" > Active LOW ?
             </div>    
 
             <label class="control-label">Filament Runout IO Point:</label>
             <div class="controls">
-                <input type="checkbox" class="input-block-level" data-bind="checked: SIO_EnableFRSIOPoint" >
+                <input type="checkbox" class="input-block-level" title="Enable" data-bind="checked: SIO_EnableFRSIOPoint" >
                 <!--<select data-bind="value: SIO_FRSIOPoint,options:SIO_IOCounts,optionsCaption: 'select...'"></select>-->
                 <input class="span6" type="number" data-bind="value: SIO_FRSIOPoint"/> 
-                <input type="checkbox" class="input-block-level" data-bind="checked: SIO_InvertFRSIOPoint" > Invert ?
+                <input type="checkbox" class="input-block-level" data-bind="checked: SIO_InvertFRSIOPoint" > Active LOW ?
             </div>    
         </div>
 
@@ -95,7 +96,7 @@
                     </select>
                 </div>
                 <div class="span1">
-                    <a title="Move SIO Configuration" class="btn btn-danger" data-bind="click: $parent.removeSioConfiguration">
+                    <a title="Remove SIO Configuration" class="btn btn-danger" data-bind="click: $parent.removeSioConfiguration">
                         <i class="icon-trash"></i>
                     </a>
                 </div>

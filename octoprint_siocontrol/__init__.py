@@ -1,6 +1,8 @@
 # coding=utf-8
 from __future__ import absolute_import, print_function
 
+from time import sleep, time
+
 import flask
 
 import octoprint.plugin
@@ -29,6 +31,7 @@ class SiocontrolPlugin(
         # self.config = dict()
         self.IOCurrent = None
         self.IOStatus = "Ready"
+        self.conn = None  # Connection.Connection(self)
         return
 
     def get_template_vars(self):
@@ -105,8 +108,13 @@ class SiocontrolPlugin(
             elif type(v) == bool:
                 v = self._settings.get_boolean([k])
 
-    def on_after_startup(self, *args, **kwargs):
+    def setStartUpIO(self):
+        # Need to workout Non blocking thread with delay or other way to handle the comms to the MC better at startup.
+        # Right now this will just not work for some Microcontrollers.
+        # Due to the fact that the act of connecting causes it to reset.
+        # So it is rebooting while these instructions are sent.
 
+        self._logger.info("Setting initial State for Outputs")
         for configuration in self._settings.get(["sio_configurations"]):
             self._logger.info(
                 "Configured SIO{}: {},{} ({})".format(
@@ -117,6 +125,25 @@ class SiocontrolPlugin(
                 )
             )
 
+            pin = int(configuration["pin"])
+
+            if pin != -1:
+                # SIO.setup(pin, GPIO.OUT)
+
+                if configuration["active_mode"] == "active_out_low":
+                    if configuration["default_state"] == "default_on":
+                        self.conn.send(f"IO {pin} 0")  # GPIO.output(pin, GPIO.LOW)
+                    elif configuration["default_state"] == "default_off":
+                        self.conn.send(f"IO {pin} 1")  # GPIO.output(pin, GPIO.HIGH)
+                elif configuration["active_mode"] == "active_out_high":
+                    if configuration["default_state"] == "default_on":
+                        self.conn.send(f"IO {pin} 1")  # GPIO.output(pin, GPIO.HIGH)
+                    elif configuration["default_state"] == "default_off":
+                        self.conn.send(f"IO {pin} 0")  # GPIO.output(pin, GPIO.LOW)
+        return
+
+    def on_after_startup(self, *args, **kwargs):
+
         # connect to IO
         self.conn = Connection.Connection(self)
         self.conn.connect()
@@ -124,6 +151,8 @@ class SiocontrolPlugin(
         if self.conn.is_connected():
             self._logger.info("Connected to Serial IO")
             self.IOStatus = "Connected"
+
+            self.setStartUpIO()
         else:
             self.IOStatus = "Could not connect Serial IO"
             self._logger.error("Could not connect Serial IO")
@@ -151,9 +180,22 @@ class SiocontrolPlugin(
             getPorts="",
             getIOCounts="",
             getStatusMessage="",
+            connectIO="",
         )
 
     def on_api_command(self, command, data):
+        if command == "connectIO":
+            if self.conn.is_connected():
+                self.conn.stopCommThreads()
+                self.conn.disconnect()
+
+            self.conn.connect()
+            if self.conn.is_connected():
+                self._logger.info("Connected")
+            else:
+                self._logger.error("Could not connect to SIO.")
+
+            return flask.jsonify(self.IOStatus)
 
         if command == "getStatusMessage":
             return flask.jsonify(self.IOStatus)
@@ -262,7 +304,7 @@ class SiocontrolPlugin(
 
         if comChanged:
             if self.conn.is_connected():
-                self.conn.stopReadThread()
+                self.conn.stopCommThreads()
                 self.conn.disconnect()
 
             self.conn.connect()
@@ -278,7 +320,7 @@ class SiocontrolPlugin(
             self._settings.set(["PSUIOPoint"], data["PSUIOPoint"])
 
         if self.conn.is_connected():
-            self.conn.Update_IOSI(self._settings.set(["IOSI"]))
+            self.conn.Update_IOSI(self._settings.get(["IOSI"]))
 
         self.reload_settings()
 
