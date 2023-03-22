@@ -80,9 +80,15 @@ All commands must end with a new line character (\n) If the command is recognize
 ## Hardware options
 The number of IO and use case is configurable in the firmware of the micro controller. The serial protocol used is simple and can be ported to just about any micro controller with ease. There are several examples of firmware that can be used as is or adjusted to your needs. There are also several off the shelf IO board kits that can be purchased if you do not want to design and build one yourself.
 
-- [Arduino shield](https://www.amazon.com/dp/B00DDEIW1Y): with 6 relay outputs and 6 digital inputs. Also requires an [Arduino UNO](https://www.amazon.com/Arduino-A000066-ARDUINO-UNO-R3/dp/B008GRTSV6). Example firmware:[Mega2560-SerialIO_PKA05IOShield](https://github.com/jcassel/Mega2560-SerialIO_PKA05IOShield)
-- [CANADUINO PLC MEGA328](https://www.amazon.com/dp/B085F3YRK4) with 6 relay outputs and 4 digital inputs. Example firmware: [CanaduinoPLCSerialIO](https://github.com/jcassel/CanaduinoPLCSerialIO)
-- [SerialIO Control board](https://www.tindie.com/products/jcsgotthis/iot-project-board-octoprint-siocontrol-board/) with 2 relay outputs, 6 digital configurable(in/out)puts. Example firmware:[D1SerialIO](https://github.com/jcassel/D1SerialIO)
+- [ESP32 2 Channel Relay board](https://www.amazon.com/dp/B0B8J9SNB5?psc=1&ref=ppx_yo2ov_dt_b_product_details) is a good option. This is my board of choice. Its has good isolation for the relays so you should not have any issues with switching mains power though these. It also leaves a lot of room for expansion.  I have some other related projects coming for this board as well. This is one of the boards I will be offering on [Tindie.com](https://www.tindie.com) in the near future. 
+- [CANADUINO PLC MEGA328](https://www.amazon.com/dp/B085F3YRK4) with 6 relay outputs and 4 digital inputs. Example firmware: [CanaduinoPLCSerialIO](https://github.com/jcassel/CanaduinoPLCSerialIO). This board is a great option having both inputs and outputs but also does not come assembled. Meaning it requires a lot of soldering so be ready for that. 
+- [SerialIO Control board] using an ESP8266 DIY board. Example firmware:[D1SerialIO](https://github.com/jcassel/D1SerialIO) 
+
+- I also have some options coming soon through [Tindie.com](https://www.tindie.com). Check back here for future details. 
+
+Additional options that will work but have some drawbacks. 
+- [Arduino shield](https://www.amazon.com/dp/B00DDEIW1Y): with 6 relay outputs and 6 digital inputs. Also requires an [Arduino UNO](https://www.amazon.com/Arduino-A000066-ARDUINO-UNO-R3/dp/B008GRTSV6). Example firmware:[Mega2560-SerialIO_PKA05IOShield](https://github.com/jcassel/Mega2560-SerialIO_PKA05IOShield) 
+	###### [I don't really recommend this as the terminals are very small. You likely also do not want to put mains power through the relays on this board. You should add a secondary mains power capable  relay to use with this. ]
 ##
 
 
