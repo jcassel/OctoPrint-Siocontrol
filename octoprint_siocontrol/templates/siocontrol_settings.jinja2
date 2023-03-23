@@ -4,7 +4,7 @@
     <div class="control-group">
         <label class="control-label">Communications Port</label>
         <div class="controls">
-            <select data-bind="value: SIO_Port(),options:SIO_Ports, optionsCaption: 'select...'"></select>
+            <select data-bind="value: SIO_Port,options:SIO_Ports, optionsCaption: 'select...'"></select>
             <button class="btn" data-bind="click: getPorts" title="Refresh Connection Options"><i class="fas fa-sync"></i></button>
             <button class="btn" data-bind="click: connectIO" title="Connect"><i class="fas fa-assistive-listening-systems"></i></button>
             <span data-bind="text: IOStatusMessage"></span>

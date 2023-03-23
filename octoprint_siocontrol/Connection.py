@@ -71,6 +71,9 @@ class Connection:
                 and str(self._settings.get(["IOBaudRate"])) != "None"
             ):
                 self._logger.info("Connecting...")
+                self._logger.info("Port:" + self._settings.get(["IOPort"]))
+                self._logger.info("IOBaudRate:" + self._settings.get(["IOBaudRate"]))
+
                 self.serialConn = serial.Serial(
                     self._settings.get(["IOPort"]),
                     int(self._settings.get(["IOBaudRate"])),

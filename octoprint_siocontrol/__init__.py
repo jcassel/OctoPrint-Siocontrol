@@ -331,9 +331,9 @@ class SiocontrolPlugin(
         # should do direct IO configuration sends here.
 
         comChanged = True
-        # if "IOPort" in data:
-        #    self._settings.set(["IOPort"], data["IOPort"])
-        #    comChanged = True
+        if "IOPort" in data:
+            self._settings.set(["IOPort"], data["IOPort"])
+            comChanged = True
 
         if "IOBaudRate" in data:
             self._settings.set(["IOBaudRate"], data["IOBaudRate"])
