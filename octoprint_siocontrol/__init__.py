@@ -32,6 +32,7 @@ class SiocontrolPlugin(
         # self.config = dict()
         self.IOCurrent = None
         self.IOStatus = "Ready"
+        self.IOSWarnings = ""
         self.conn = None  # Connection.Connection(self)
         return
 
@@ -69,6 +70,7 @@ class SiocontrolPlugin(
             "IOCounts": self._settings.get(["IOCounts"]),
             "sio_configurations": self._settings.get(["sio_configurations"]),
             "IOStatusMessage": self.IOStatus,
+            "IOSWarnings": self.IOSWarnings,
         }
 
     def get_template_configs(self):
@@ -105,6 +107,7 @@ class SiocontrolPlugin(
             IOPorts=[],
             IOCounts=[],
             IOStatusMessage="Unknown Status",
+            IOSWarnings="",
         )
 
     def on_settings_initialized(self):
@@ -180,10 +183,11 @@ class SiocontrolPlugin(
             self._logger.warning(
                 "The version of PSUControl that is installed does not support plugin registration."
             )
+            self.IOSWarnings = "PSUControl version mistmatch"
             return
-
-        psucontrol_helpers["register_plugin"](self)
-        self._logger.info("Regester as Sub Plugin to PSUControl")
+        else:
+            psucontrol_helpers["register_plugin"](self)
+            self._logger.info("Regester as Sub Plugin to PSUControl")
 
     def get_api_commands(self):
         return dict(
@@ -216,7 +220,7 @@ class SiocontrolPlugin(
             return flask.jsonify(self.IOStatus)
 
         if command == "getStatusMessage":
-            return flask.jsonify(self.IOStatus)
+            return flask.jsonify(self.IOStatus, self.IOSWarnings)
 
         if command == "getPorts":
             avalPorts = self.conn.serialList()
@@ -228,66 +232,71 @@ class SiocontrolPlugin(
 
         configuration = self._settings.get(["sio_configurations"])[int(data["id"])]
         pin = int(configuration["pin"])
+        if pin < len(self.IOCurrent):
+            if command == "getSioState":
+                if pin <= 0:
+                    return flask.jsonify("")
+                elif configuration["active_mode"] == "active_out_low":
+                    rtnJ = flask.jsonify("on" if self.IOCurrent[pin] == "1" else "off")
+                    return rtnJ
+                elif configuration["active_mode"] == "active_out_high":
+                    rtnJ = flask.jsonify("off" if self.IOCurrent[pin] == "1" else "on")
+                    return rtnJ
 
-        if command == "getSioState":
-            if pin < 0:
-                return flask.jsonify("")
-            elif configuration["active_mode"] == "active_out_low":
-                rtnJ = flask.jsonify("on" if self.IOCurrent[pin] == "1" else "off")
-                return rtnJ
-            elif configuration["active_mode"] == "active_out_high":
-                rtnJ = flask.jsonify("off" if self.IOCurrent[pin] == "1" else "on")
-                return rtnJ
+            elif command == "turnSioOn":
+                if Permissions.CONTROL.can() and pin >= 0:
+                    if self.conn.is_connected():
+                        self._logger.info("Turned on SIO{}".format(configuration["pin"]))
 
-        elif command == "turnSioOn":
+                        if configuration["active_mode"] == "active_out_low":
+                            self.conn.send(f"IO {pin} 0")
 
-            if Permissions.CONTROL.can() and pin > 0:
-                if self.conn.is_connected():
-                    self._logger.info("Turned on SIO{}".format(configuration["pin"]))
+                            if self.IOCurrent[pin] == "0":
+                                return flask.jsonify("state: on")
+                            else:
+                                return flask.jsonify("state: off")
 
-                    if configuration["active_mode"] == "active_out_low":
-                        self.conn.send(f"IO {pin} 0")
+                        elif configuration["active_mode"] == "active_out_high":
+                            self.conn.send(f"IO {pin} 1")
 
-                        if self.IOCurrent[pin] == "0":
-                            return flask.jsonify("state: on")
-                        else:
-                            return flask.jsonify("state: off")
+                            if self.IOCurrent[pin] == "1":
+                                return flask.jsonify("state: on")
+                            else:
+                                return flask.jsonify("state: off")
 
-                    elif configuration["active_mode"] == "active_out_high":
-                        self.conn.send(f"IO {pin} 1")
+                    else:
+                        self._logger.info(
+                            "Not connected ignored IO command on Pin{}".format(pin)
+                        )
 
-                        if self.IOCurrent[pin] == "1":
-                            return flask.jsonify("state: on")
-                        else:
-                            return flask.jsonify("state: off")
+            elif command == "turnSioOff":
+                if Permissions.CONTROL.can() and pin >= 0:
+                    if self.conn.is_connected():
+                        self._logger.info("Turned off SIO{}".format(configuration["pin"]))
+                        if configuration["active_mode"] == "active_out_low":
+                            self.conn.send(f"IO {pin} 1")
+                            if self.IOCurrent[pin] == "1":
+                                return flask.jsonify("state: off")
+                            else:
+                                return flask.jsonify("state: on")
 
-                else:
-                    self._logger.info(
-                        "Not connected ignored IO command on Pin{}".format(pin)
-                    )
+                        elif configuration["active_mode"] == "active_out_high":
+                            self.conn.send(f"IO {pin} 0")
+                            if self.IOCurrent[pin] == "0":
+                                return flask.jsonify("state: off")
+                            else:
+                                return flask.jsonify("state: on")
 
-        elif command == "turnSioOff":
-            if pin > 0:
-                if self.conn.is_connected():
-                    self._logger.info("Turned off SIO{}".format(configuration["pin"]))
-                    if configuration["active_mode"] == "active_out_low":
-                        self.conn.send(f"IO {pin} 1")
-                        if self.IOCurrent[pin] == "1":
-                            return flask.jsonify("state: off")
-                        else:
-                            return flask.jsonify("state: on")
-
-                    elif configuration["active_mode"] == "active_out_high":
-                        self.conn.send(f"IO {pin} 0")
-                        if self.IOCurrent[pin] == "0":
-                            return flask.jsonify("state: off")
-                        else:
-                            return flask.jsonify("state: on")
-
-                else:
-                    self._logger.info(
-                        "Not connected ignored IO command on Pin{}".format(pin)
-                    )
+                    else:
+                        self._logger.info(
+                            "Not connected ignored IO command on Pin{}".format(pin)
+                        )
+        else:
+            self.IOSWarnings = "Pin [{}] out of range.".format(pin)
+            self._logger.info("Pin [{}] outof range.".format(pin))
+            self._logger.info(
+                "Max Pin assignment is [{}]".format(len(self.IOCurrent) - 1)
+            )
 
     def on_api_get(self, request):
         states = []
@@ -295,7 +304,7 @@ class SiocontrolPlugin(
             if configuration["pin"] is not None:
                 pin = int(configuration["pin"])
 
-                if self.IOCurrent is not None:
+                if self.IOCurrent is not None and pin < len(self.IOCurrent):
                     if pin < 0:
                         states.append("")
                     elif configuration["active_mode"] == "active_in_low":
@@ -311,6 +320,9 @@ class SiocontrolPlugin(
                         pstate = "on" if self.IOCurrent[pin] == "1" else "off"
                         states.append(pstate)
                 else:
+                    self._logger.info(
+                        f"Pin number assigned to IO control{pin=} maybe out of range."
+                    )
                     states.append("off")
             else:
                 states.append("off")
@@ -364,7 +376,7 @@ class SiocontrolPlugin(
         return
 
     def turn_psu_on(self):
-        if self._settings.get(["EnablePSUIOPoint"]):
+        if Permissions.CONTROL.can() and self._settings.get(["EnablePSUIOPoint"]):
             psupoint = self._settings.get(["PSUIOPoint"])
             if self._settings.get(["InvertPSUIOPoint"]):
                 self.conn.send(f"IO {psupoint} 0")

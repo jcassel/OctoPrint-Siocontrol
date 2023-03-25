@@ -19,6 +19,7 @@ $(function () {
         self.SIO_Port = ko.observable('');
         self.SIO_Ports = ko.observableArray();
         self.IOStatusMessage = ko.observable('Ready');
+        self.IOSWarnings = ko.observable('');
 
         self.SIO_SI = 3001;
 
@@ -59,6 +60,8 @@ $(function () {
 
 
             self.IOStatusMessage(self.settingsViewModel.settings.plugins.siocontrol.IOStatusMessage());
+            self.IOSWarnings(self.settingsViewModel.settings.plugins.siocontrol.IOSWarnings());
+
             self.SIO_Port(self.settingsViewModel.settings.plugins.siocontrol.IOPort());
             self.SIO_Ports(self.settingsViewModel.settings.plugins.siocontrol.IOPorts());
             self.SIO_BaudRate = self.settingsViewModel.settings.plugins.siocontrol.IOBaudRate();
@@ -181,8 +184,11 @@ $(function () {
 
         self.getStatusMessage = function () {
             OctoPrint.simpleApiCommand("siocontrol", "getStatusMessage", {}).then(function (status) {
-                self.IOStatusMessage(status);
+                self.IOStatusMessage(status[0]);
+                self.IOSWarnings(status[1]);
             });
+
+
         };
 
         self.connectIO = function () {

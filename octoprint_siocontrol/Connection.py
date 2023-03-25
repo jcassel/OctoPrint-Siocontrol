@@ -86,6 +86,7 @@ class Connection:
                     self._connected = True
                     # self.send("BIO")  # request io
                     self.plugin.IOStatus = "Connected"
+                    self.plugin.IOWarnings = ""
                     self._logger.info("Starting read thread...")
                     self.startCommThreads()
                 else:
