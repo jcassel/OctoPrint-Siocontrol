@@ -30,6 +30,7 @@ class SiocontrolPlugin(
 ):
     def __init__(self):
         # self.config = dict()
+        self.DeviceCompatibleVersion = "SIOPlugin 0.1.1"
         self.IOCurrent = None
         self.IOStatus = "Ready"
         self.IOSWarnings = ""
@@ -167,6 +168,7 @@ class SiocontrolPlugin(
         if self.conn.is_connected():
             self._logger.info("Connected to Serial IO")
             self.IOStatus = "Connected"
+            self.IOSWarnings = " "
             self.conn.send("SI " + self._settings.get(["IOSI"]))
             self.setStartUpIO()
         else:
@@ -320,9 +322,11 @@ class SiocontrolPlugin(
                         pstate = "on" if self.IOCurrent[pin] == "1" else "off"
                         states.append(pstate)
                 else:
-                    self._logger.info(
-                        f"Pin number assigned to IO control{pin=} maybe out of range."
-                    )
+                    if self.conn is not None and self.conn.is_connected() is True:
+                        self._logger.info(
+                            f"Pin number assigned to IO control{pin=} maybe out of range."
+                        )
+
                     states.append("off")
             else:
                 states.append("off")

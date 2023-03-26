@@ -2,7 +2,8 @@ import fnmatch
 import glob
 import os
 import re
-import sys
+
+# import sys
 import threading
 import time
 
@@ -42,7 +43,6 @@ class Connection:
         self.writeThread = None
         self.pauseWriteThread = False
         self.writeThreadStop = False
-
         self._connected = False
         self.serialConn = None
         self.gCodeExtrusion = 0
@@ -51,6 +51,83 @@ class Connection:
         self.IOCount = 0
         self.commandQueue = []
         self.enableCommandQueue = False
+        self.deviceIsCompatible = False
+
+    def getVersionCompatibilty(self):
+        self.send("VC")
+
+    def IODeviceInitialize(self):
+        self.serialConn.reset_input_buffer()
+        self.serialConn.reset_output_buffer()
+        self.serialConn.write("VC\n".encode())  # request version and compatibility info
+        checkingCompatibility = True
+        iReadTimeoutCounter = 0
+        while checkingCompatibility is True:
+            line = self.serialConn.readline()
+
+            if line:
+                try:
+                    line = line.strip().decode()
+                except Exception:
+                    pass
+                if line[:2] == "VI":
+                    self._logger.debug(f"IO Reported Version as:{line[3:]=}")
+
+                elif line[:2] == "CP":
+                    self._logger.debug(f"IO Reported Compatibility as:{line=}")
+                    if line[3:] != self.plugin.DeviceCompatibleVersion:
+                        self._logger.info(f"IO Reported Compatibility as:{line=}")
+                        self._logger.info(
+                            f"Required Compatibility is:{self.plugin.DeviceCompatibleVersion=}"
+                        )
+                        self.disconnect()
+                        self._connected = False
+                        self._logger.error(
+                            "IO Not compatible with this version of SIOPlugin"
+                        )
+                        self._logger.error("Stopping communications to SIO")
+                        self.stopCommThreads()
+                        self.plugin.IOSWarnings = (
+                            "Conneced to encompatible device. Check Comm port setting"
+                        )
+                        self.deviceIsCompatible = False
+                    else:  # all good
+                        self.deviceIsCompatible = True
+                        self.send("IC")  # que up request for IO Count
+
+                    # no matter what the result is we are done here.
+                    checkingCompatibility = False
+
+                elif line[:2] == "IO" or line[:2] == "RR":
+                    # ignore
+                    self._logger.debug(
+                        f"Unexpected(valid) Comm during compatibility check:{line}"
+                    )
+                else:
+                    self._logger.debug(
+                        f"Unexpected Comm during compatibility check:{line}"
+                    )
+                    iReadTimeoutCounter = iReadTimeoutCounter + 1
+                    self._logger.error(f"IO readtimeout Count:{iReadTimeoutCounter}")
+
+                    if iReadTimeoutCounter > 10:
+                        self.disconnect()
+                        self._connected = False
+                        self.stopCommThreads()
+                        self.plugin.IOSWarnings = (
+                            "Conneced to encompatible device. Check Comm port setting"
+                        )
+                        self.deviceIsCompatible = False
+                        # Seems that the device is not responding.
+                        checkingCompatibility = False
+
+            else:
+                iReadTimeoutCounter = iReadTimeoutCounter + 1
+                self._logger.error(f"IO readtimeout Count:{iReadTimeoutCounter}")
+                if iReadTimeoutCounter > 10:
+                    self.deviceIsCompatible = False
+                    # Seems that the device is not responding.
+                    checkingCompatibility = False
 
     def disconnect(self):
         self.commandQueue = []  # empty command queue
@@ -82,13 +159,16 @@ class Connection:
 
                 if self.serialConn.is_open:
                     self.commandQueue = []
-                    self._logger.info("cleared Command queue")
+                    self._logger.debug("cleared Command queue")
                     self._connected = True
-                    # self.send("BIO")  # request io
-                    self.plugin.IOStatus = "Connected"
-                    self.plugin.IOWarnings = ""
-                    self._logger.info("Starting read thread...")
-                    self.startCommThreads()
+                    self.IODeviceInitialize()
+                    if self.deviceIsCompatible is True:
+                        self.plugin.IOStatus = "Connected"
+                        self.plugin.IOWarnings = " "
+                        self._logger.debug("Starting read thread...")
+                        self.startCommThreads()
+                    else:
+                        self.plugin.IOStatus = "Could not connect to SIO"
                 else:
                     self.plugin.IOStatus = "Could not connect to SIO"
             else:
@@ -100,9 +180,10 @@ class Connection:
 
         except serial.SerialException as err:
             self.commandQueue = []
-            self._logger.info("cleared Command queue")
-            self._logger.info("Connection failed!")
+            self._logger.debug("cleared Command queue")
+            self._logger.debug("Connection failed!")
             self._logger.exception(f"Serial Exception: {err=}, {type(err)=}")
+
         except Exception as err:
             self._logger.exception(f"Unexpected {err=}, {type(err)=}")
 
@@ -150,13 +231,13 @@ class Connection:
 
     def send(self, data):
         self.commandQueue.append(f"{data}\n".encode())
-        self._logger.info("Queueing Command: %s" % data)
+        self._logger.debug("Queueing Command: %s" % data)
 
     def write_thread(self, serialConnection):
         pauseWasSent = False
         while self.is_connected and self.readThreadStop is False:
             try:
-                time.sleep(0.25)
+                time.sleep(0.125)
                 if self.enableCommandQueue is True and len(self.commandQueue) > 0:
                     self.pauseReadThread = True
                     if len(self.commandQueue) > 1 and pauseWasSent is False:
@@ -167,7 +248,7 @@ class Connection:
                     else:
                         command = self.commandQueue[0]
                         serialConnection.write(command)
-                        self._logger.info(f"SOI Sent:{command=}")
+                        self._logger.debug(f"SOI Sent:{command}")
 
                     time.sleep(0.1)
                     line = serialConnection.readline()
@@ -176,17 +257,17 @@ class Connection:
                             line = line.strip().decode()
                         except Exception:
                             pass
-                        self._logger.info(f">IO Responded with:{line=}")
+                        self._logger.debug(f">IO Responded with:{line}")
                         if line[:2] == "OK" and command != "EIO-NoPop":
                             pcommand = self.commandQueue.pop(0)
-                            self._logger.info("Poped Command: %s" % pcommand)
+                            self._logger.debug("Poped Command: %s" % pcommand)
                             # errorCount = 0
 
                 else:
                     if pauseWasSent is True:
                         pauseWasSent = False
                         serialConnection.write("BIO\n".encode())
-                        self._logger.info("SOI Sent:BIO")
+                        self._logger.debug("SOI Sent:BIO")
 
                     self.pauseReadThread = False
 
@@ -213,33 +294,54 @@ class Connection:
                             line = line.strip().decode()
                         except Exception:
                             pass
+                        if line[:2] == "VI":
+                            self._logger.debug(f"IO Reported Version as:{line}")
 
-                        if line[:2] == "IO":
-                            self._logger.info(f"IO Reported State as:{line=}")
-                            self.plugin.IOCurrent = line[3:]
-                            self.IOCount = len(self.plugin.IOCurrent)
-                            self.checkActionIO()
+                        elif line[:2] == "CP":
+                            self._logger.debug(f"IO Reported Compatibility as:{line}")
+                            if line[3:] != self.plugin.DeviceCompatibleVersion:
+                                self._logger.info(f"IO Reported Compatibility as:{line}")
+                                self._logger.info(
+                                    f"Required Compatibility is:{self.plugin.DeviceCompatibleVersion=}"
+                                )
+                                self.disconnect()
+                                self._connected = False
+                                self._logger.error(
+                                    "IO Not compatible with this version of SIOPlugin"
+                                )
+                                self._logger.error("Stopping communications to SIO")
+                                self.stopCommThreads()
+
+                        elif line[:2] == "IO":
+                            self._logger.debug(f"IO Reported State as:{line}")
+                            if self.plugin.IOCurrent != line[3:]:
+                                self._logger.info(f"IO Reported State as:{line}")
+                                self.plugin.IOCurrent = line[3:]
+                                self.IOCount = len(self.plugin.IOCurrent)
+                                self.checkActionIO()
+
                             errorCount = 0
 
-                        if line[:2] == "OK":
-                            self._logger.info(f"IO Responded with:{line=}")
+                        elif line[:2] == "OK":
+                            self._logger.debug(f"IO Responded with:{line}")
                             errorCount = 0
 
-                        if line[:2] == "IC":  # explicit report IO count.
+                        elif line[:2] == "IC":  # explicit report IO count.
                             self.IOCount = int(line[3:])
                             errorCount = 0
 
-                        if line[:2] == "RR":  # IO ready for commands
-                            self._logger.info(f"IO claimed ready for commands:{line=}")
+                        elif line[:2] == "RR":  # IO ready for commands
+                            self._logger.debug(f"IO claimed ready for commands:{line}")
                             self.enableCommandQueue = True
 
-                        if (
-                            line[:2] != "OK"
-                            and line[:2] != "IO"
-                            and line[:2] != "IC"
-                            and line[:2] != "RR"
-                        ):
-                            self._logger.info(f"IO sent:{line=}")  # error?
+                        elif list[:2] == "IT":  # IO type List
+                            self._logger.debug(f"IO Type list sent:{line}")
+
+                        elif list[:2] == "DG":  # Debug Message
+                            self._logger.debug(f"IO sent debug message:{line}")
+
+                        else:
+                            self._logger.debug(f"IO sent:{line}")  # error?
                             errorCount = errorCount + 1
                             if errorCount > 9:
                                 self.plugin.IOCurrent = ""
@@ -278,10 +380,10 @@ class Connection:
 
             except Exception as err:
                 # [22] happens on windows machines. This is normal.
-                if err.errno != 22:
-                    self._logger.exception(f"Unexpected {err=}, {type(err)=}")
+                if err.errno == 22:
+                    self._logger.debug(f"Unexpected(windows OK) {err=}, {type(err)=}")
                 else:
-                    self._logger.info(f"Unexpected {err=}, {type(err)=}")
+                    self._logger.exception(f"Unexpected {err=}, {type(err)=}")
 
                 pass
         else:
@@ -385,13 +487,19 @@ class Connection:
     def stopCommThreads(self):
         self.readThreadStop = True
         if self.readThread and threading.current_thread() != self.readThread:
-            self.readThread.join()
+            try:
+                self.readThread.join()
+            except Exception:
+                pass
 
         self.readThread = None
 
         self.writeThreadStop = True
         if self.writeThread and threading.current_thread() != self.writeThread:
-            self.writeThread.join()
+            try:
+                self.writeThread.join()
+            except Exception:
+                pass
 
         self.writeThread = None
 
