@@ -1,35 +1,14 @@
 # coding=utf-8
 
 ########################################################################################################################
-### Do not forget to adjust the following variables to your own plugin.
-
-# The plugin's identifier, has to be unique
 plugin_identifier = "siocontrol"
-
-# The plugin's python package, should be "octoprint_<plugin identifier>", has to be unique
 plugin_package = "octoprint_siocontrol"
-
-# The plugin's human readable name. Can be overwritten within OctoPrint's internal data via __plugin_name__ in the
-# plugin module
 plugin_name = "SIO Control"
-
-# The plugin's version. Can be overwritten within OctoPrint's internal data via __plugin_version__ in the plugin module
 plugin_version = "0.6.2"
-
-# The plugin's description. Can be overwritten within OctoPrint's internal data via __plugin_description__ in the plugin
-# module
-plugin_description = "Serial IO Control, Adds a sidebar with on/off buttons for controling of Outputs and monitoring of Inputs. Is also a Subplugin for integration with PSU control, incorperates EStop and simple Filament runout as physical inputs. Mainly serves as an alteritive if you are not using a Raspberry Pie or other device that can take advantage local IO. Requires a Microcotroler as the IO."
-
-# The plugin's author. Can be overwritten within OctoPrint's internal data via __plugin_author__ in the plugin module
+plugin_description = "Adds a sidebar with on/off buttons for controling a SerialIO module. Integrates with PSU Control. Includes faliment runout and Emergency Stop input capabilites."
 plugin_author = "jcassel"
-
-# The plugin's author's mail address.
 plugin_author_email = "jcassel@softwaresedge.com"
-
-# The plugin's homepage URL. Can be overwritten within OctoPrint's internal data via __plugin_url__ in the plugin module
 plugin_url = "https://github.com/jcassel/OctoPrint-Siocontrol"
-
-# The plugin's license. Can be overwritten within OctoPrint's internal data via __plugin_license__ in the plugin module
 plugin_license = "AGPLv3"
 
 # Any additional requirements besides OctoPrint should be listed here
