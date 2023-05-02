@@ -55,48 +55,26 @@ Configuration of a Pin makes it accessible in the sideNav. It is ok if the pin i
 IO Point numbers and configurations must match the IO device firmware setup. In the [D1SerialIO firmware](https://github.com/jcassel/D1SerialIO) there are a total of 8 IO points. The [nanoSerialIO Firmware](https://github.com/jcassel/nanoSerialIO) has 20 digital points. All can configure each as either an input or an output. The OctoPrint-Serial IO Board I offer on Tindie has 2 relays and 6 other IO points that can be setup as either inputs or outputs. 
 
 
-## SIO Serial Commands 
-
-All commands must end with a new line character (\n) If the command is recognized as a valid command the device will respond with an "OK" as an Ack. if it is not recognized, it will return an error in the format of: if command "AA" is sent to the device.A return code of: "ERROR: Unrecognized command[AA]\n" will be sent.
-
-- BIO Begin AutoReporting IO status (only needed if EIO has been called.) 
-
-- EIO Pause/End IO Status Autoreporting. This setting is not maintained through restarts of the device.
-
-- IC returns the number of IO points being monitored. 
-
-- debug [0/1] turns on[1] or off[0] debug output. Should not be used while connected to Octoprint SIOControl. This setting is not maintained through restarts of the device.
-
-- CIO [io pattern] The [io pattern]  is an string of integers as a single value. For example: 0000111111 (this sets the first 4 io points to inputs and the last 6 to output.) There are 4 posible values that can be used for each type. 0=input, 1=output, 2 input_Pullup, 3 input_pulldown, Output_open_drain. Not all devices support all of the types listed. 0-2 are supported in most cases. This setting is not maintained through restarts of the device unless settings are stored using SIO command.
-
-- SIO Stores current IO point type settings to local storage. This causes the current IO point types to be maintained through restarts of the device.
-
-- IOT outputs the current IO Point types pattern
-
-- IO [#] [0/1] Sets an IO point {#:position in IO pattern] to a logic level [0:low] [1:HIGH]. Example: "IO 9 1" will set the io point 9 to High 
-
-- SI [500-4,294,967,295]  .5 seconds to ~1,193 hours realistically you would want this setting to be no less than 10,000 or 10 seconds to ensure generally acceptable feedback on changes made to the IO.
-##
+## 
 ## Hardware options
 The number of IO and use case is configurable in the firmware of the micro controller. The serial protocol used is simple and can be ported to just about any micro controller with ease. There are several examples of firmware that can be used as is or adjusted to your needs. There are also several off the shelf IO board kits that can be purchased if you do not want to design and build one yourself.
 
-- [ESP32 2 Channel Relay board](https://www.amazon.com/dp/B0B8J9SNB5?psc=1&ref=ppx_yo2ov_dt_b_product_details) is a good option. This is my board of choice. Its has good isolation for the relays so you should not have any issues with switching mains power though these. It also leaves a lot of room for expansion.  I have some other related projects coming for this board as well. This is one of the boards I will be offering on [Tindie.com](https://www.tindie.com) in the near future. 
-- [CANADUINO PLC MEGA328](https://www.amazon.com/dp/B085F3YRK4) with 6 relay outputs and 4 digital inputs. Example firmware: [SIO_CanaduinoPLC](https://github.com/jcassel/SIOControlFirmware/tree/main/SIO_CanaduinoPLC). This board is a great option having both inputs and outputs but also does not come assembled. Meaning it requires a lot of soldering so be ready for that. 
-- [SerialIO Control board] using a D1 mini(ESP8266) based project board. Example firmware:[SIO_SWBoard_D1mini](https://github.com/jcassel/SIOControlFirmware/tree/main/SIO_SWBoard_D1mini) 
+### There are a few options over on Tindie if you want something more or less ready to go. 
+- [2 Channel Relay board](https://www.tindie.com/products/softwaresedge/octoprint-siocontrol-2-relay-module/)
+- [Plug and play 2 Channel Relay board Kit with up to 11 other IO points](https://www.tindie.com/products/softwaresedge/octoprint-serial-io-kit/)
+- [4 Channel Relay board](https://www.tindie.com/products/softwaresedge/octoprint-siocontrol-4-relay-module/)
 
-- I also have some options coming soon through [Tindie.com](https://www.tindie.com). Check back here for future details. 
 
-Additional options that will work but have some drawbacks. 
-- [Arduino shield](https://www.amazon.com/dp/B00DDEIW1Y): with 6 relay outputs and 6 digital inputs. Also requires an [Arduino UNO](https://www.amazon.com/Arduino-A000066-ARDUINO-UNO-R3/dp/B008GRTSV6). Example firmware:[Mega2560-SerialIO_PKA05IOShield](https://github.com/jcassel/SIOControlFirmware/tree/main/SIO_Mega2560_PKA05Shield) 
-	###### [I don't really recommend this as the terminals are very small. You likely also do not want to put mains power through the relays on this board. You should add a secondary mains power capable  relay to use with this. ]
-##
+### Or you can also do it more DIY with options like these. 
+- [CANADUINO PLC MEGA328](https://www.amazon.com/dp/B085F3YRK4) with 6 relay outputs and 4 digital inputs. This board can be a great option having both inputs and outputs,although pricy for what you get and it also does not come assembled. Meaning it requires a lot of soldering.  
+- One could aslo adapt things to work with the standard Arduino Mega2560 plus PKA05Shield  Take a look at the example firmware. [Octoprint_SIOControl_Firmware repository](https://github.com/jcassel/OctoPrint_SIOControl_Firmware) to just about any arduino device. 
+
 
 
 ## Recognition of reference works
 Thank you to the other plugin developers doing great work in this space. 
-- [GpoiControl(@catgiggle)](https://github.com/catgiggle/OctoPrint-GpioControl) A lot of the initial code for this was directly pulled from GPIO Control as a starting point. 
-  
+
+- [GpoiControl(@catgiggle)](https://github.com/catgiggle/OctoPrint-GpioControl) A lot of the initial code for this was directly pulled from GPIO Control as a starting point.
 - [PSUControl(kantlivelong)](https://github.com/kantlivelong/OctoPrint-PSUControl) A well known and well used bit of code that I knew I could rely on as a good example of what to do.
-  
 - [jneilliii](https://github.com/jneilliii) so many great Plugins. The BedLevelVisualizer specifically was very helpful in working out how to deal with core ViewModels. 
 
