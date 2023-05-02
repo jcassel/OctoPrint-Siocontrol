@@ -1,6 +1,6 @@
 # OctoPrint-Siocontrol
 The Serial IO Control OctoPrint plugin, Adds a sidebar with on/off buttons for controlling of Outputs and monitoring of Inputs. It is also a SubPlugin for integration with PSU control, incorporates a physical EStop and simple Filament runout sensor. Serves as an alterative IO control for users that are not using a Raspberry Pie or other device that can take advantage local IO. Requires a Microcontroller as the IO.
-![sidebar view](https://github.com/jcassel/OctoPrint-Siocontrol/blob/main/extras/SideBarExample.PNG)
+![sidebar view](Assets/img/SideBarExample.PNG)
 
 With the Serial IO Control and an inexpensive Micro controller you can add Serial IO 
 to any OctoPrint instance. Use a micro controller like the 
@@ -25,7 +25,8 @@ Before you plug in your IO device, you should ensure that you can connect to you
 ## Configuration
 
 ### Serial Connection
-![Connection and integrations](https://github.com/jcassel/OctoPrint-Siocontrol/assets/img/SettingsExampleConn.PNG)
+![Connection and integrations](Assets/img/SettingsExampleConn.PNG)
+							   
 
 Configure the Serial Port Details. (Enter the settings dialog for the SIOControl PlugIn) 
 - Port Path(Linux) or Port Name(Windows). You may need to hit refresh to see the new port for your IO. 
@@ -35,7 +36,7 @@ Configure the Serial Port Details. (Enter the settings dialog for the SIOControl
 Save these settings check in the lower left navigation pain. It should now say "Connected". If not you may not have put in the correct connection details. You can now reopen the SIO setting and assign the rest of the details as needed. 
 
 ### Integrations 
-![Connection and integrations](https://github.com/jcassel/OctoPrint-Siocontrol/assets/img/SettingsExampleIntegrations.PNG)
+![Integrations](Assets/img/SettingsExampleIntegrations.PNG)
 
 Simple selections for integrations (Optional)
 - Enable and select IO point for PSU Control Sub Plugin.
@@ -44,7 +45,7 @@ Simple selections for integrations (Optional)
 
 
 ### IO Configuration
-![IO Configuration](https://github.com/jcassel/OctoPrint-Siocontrol/assets/img/SettingsExampleIOConfig.PNG)
+![IO Configuration](Assets/img/SettingsExampleIOConfig.PNG)
 
 
 As you add SIO configurations they will appear on the side bar for interaction and monitoring:
