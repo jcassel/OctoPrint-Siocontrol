@@ -1,5 +1,6 @@
 # OctoPrint-Siocontrol
 The Serial IO Control OctoPrint plugin, Adds a sidebar with on/off buttons for controlling of Outputs and monitoring of Inputs. It is also a SubPlugin for integration with PSU control, incorporates a physical EStop and simple Filament runout sensor. Serves as an alterative IO control for users that are not using a Raspberry Pie or other device that can take advantage local IO. Requires a Microcontroller as the IO.
+
 ![sidebar view](Assets/img/SideBarExample.PNG)
 
 With the Serial IO Control and an inexpensive Micro controller you can add Serial IO 
