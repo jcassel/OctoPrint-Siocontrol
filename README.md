@@ -1,4 +1,4 @@
-# OctoPrint-Siocontrol
+# OctoPrint-SIOControl
 The Serial IO Control OctoPrint plugin, Adds a sidebar with on/off buttons for controlling of Outputs and monitoring of Inputs. It is also a SubPlugin for integration with PSU control, incorporates a physical EStop and simple Filament runout sensor. Serves as an alterative IO control for users that are not using a Raspberry Pi or other device that can take advantage local IO. Requires a Microcontroller as the IO.
 
 ![sidebar view](Assets/img/SideBarExample.PNG)
@@ -16,7 +16,7 @@ Some hardware suggestions are listed at the end of this document.
 Install via the bundled [Plugin Manager](https://docs.octoprint.org/en/master/bundledplugins/pluginmanager.html)
 or manually using this URL:
 
-    https://github.com/jcassel/OctoPrint-Siocontrol/archive/master.zip
+    https://github.com/jcassel/OctoPrint-Siocontrol/archive/main.zip
 
 ## Getting Started
 First you should choose the IO controller and ensure it is working as expected. Ensure you know what IO numbers are setup as Inputs and Outputs. Once ready continue on. If you are not sure on this topic, there are some hardware options listed at the bottom that require little to no knowlege of programing an MCU.
@@ -66,6 +66,63 @@ Configuration of a IO Point makes it accessible in the sideNav. It is ok if the 
 
 IO Point numbers and configurations must match the IO device firmware setup. The [OctoPrint-Serial IO Board](https://www.tindie.com/products/softwaresedge/octoprint-serial-io-kit/) offered on Tindie has 2 relays, 1 Status LED, 4 designated inputs and 6 other IO points that can be setup as either inputs or outputs. 
 
+## Setting filament runout sensor
+This feature sends a pause command to the printer when the IO point is activated. This will only happen if OctoPrint has the status of “printing”.  Essentially, it does the same thing as one was to push the pause button on the OctoPrint console.  To make this really useful and allow for changing of the filament, you have to add some scripting to OctoPrint so it can take appropriate actions when it is asked to pause a running print.   
+
+When OctoPrint pauses a print job, the printer will stops and the head remains in the same position it was in when the pause was issued. This is not a good place to change the filament. What is needed is a way to move the head to a good spot to change the filament. This can be done with a script that is evoked when the printer is paused.  Let’s add a script to OctoPrint that will run when a print is paused. 
+Navigate to the OctoPrint Settings GCODE Scripts dialog, as seen in this image.  You will have to scroll down a little to see the 2 scripts that we are interested in.  
+
+"After print job is paused" and "Before print job is resumed"
+
+![GCodeScript](Assets/img/GCodeScriptDialogFR1.PNG)
+
+__In the After print job is paused script section, enter this script.__ 
+
+```
+{% if pause_position.x is not none %}
+;set to relative movement XYZ then E
+G91
+M83
+; move Z by 20mm, Retract filament of 0.8mm
+G1 Z+20 E-0.8 F4500
+; set to absolute movement XYZ then E
+M82
+G90
+; move to a safe XY position, ***Change this if needed***
+ G1 X0 Y0
+{% endif %}
+```
+
+Now when every OctoPrint pauses a print, it will move as described in the script you entered. The example here sends the Z up by 20mm above the current layer. And then moves the head to X0 and Y0 (Likely front left of your printer) to make it easy for you to do a change of the filament.  
+
+Now we need to ensure that when we resume the printer it starts back at the correct spot without hitting the print in progress. 
+
+In the Before print job is resumed script section, enter this script. 
+
+```
+{% if pause_position.x is not none %}
+;set to relative movement for E
+M83
+; re-prime nozzle so when we start to print it is good to go.
+G1 E-0.8 F4500
+G1 E1.6 F4500
+; set to absolute movement for E
+M82
+; set to absolute movement XYZ
+G90
+; reset E’s position to the original position it was in at pause 
+G92 E{{ pause_position.e }}
+;**** use M83 or M82(extruder absolute mode) according what your slicer generates****
+M82 ; set extruder to relative movement 
+; move back to pause position XY first and then Z (avoid hitting anything on the xy move)
+G1 X{{ pause_position.x }} Y{{ pause_position.y }} F4500
+G1 Z{{ pause_position.z }} F4500
+; reset to feed rate if needed.
+{% if pause_position.f is not none %}
+G1 F{{ pause_position.f }}{% endif %}
+{% endif %}
+```
+
 
 ## 
 ## Hardware options
@@ -80,6 +137,10 @@ The number of IO and use case is configurable in the firmware of the micro contr
 ### Or you can also do it more DIY with options like these. 
 - [CANADUINO PLC MEGA328](https://www.amazon.com/dp/B085F3YRK4) with 6 relay outputs and 4 digital inputs. This board can be a great option having both inputs and outputs,although pricy for what you get and it also does not come assembled. Meaning it requires a lot of soldering.  
 - One could aslo adapt things to work with the standard Arduino Mega2560 plus PKA05Shield  Take a look at the example firmware. [Octoprint_SIOControl_Firmware repository](https://github.com/jcassel/OctoPrint_SIOControl_Firmware) to just about any arduino device. 
+
+
+### Support
+I will be working on the wiki but in the mean time, if you are looking for some support, I lurk a lot on the [OctoPrint community site](https://community.octoprint.org/). Post there in the plugins section and I will likely see it and respond. 
 
 
 
