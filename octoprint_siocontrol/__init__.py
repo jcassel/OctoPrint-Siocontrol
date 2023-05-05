@@ -433,7 +433,7 @@ class SiocontrolPlugin(
         # Plugin here. See https://docs.octoprint.org/en/master/bundledplugins/softwareupdate.html
         # for details.
         return {
-            "SIOControl": {
+            "siocontrol": {
                 "displayName": "SIO Control",
                 "displayVersion": self._plugin_version,
                 # version check: github repository
