@@ -4,7 +4,7 @@
 plugin_identifier = "siocontrol"
 plugin_package = "octoprint_siocontrol"
 plugin_name = "SIO Control"
-plugin_version = "0.6.2"
+plugin_version = "0.6.3"
 plugin_description = "Adds a sidebar with on/off buttons for controling a SerialIO module. Integrates with PSU Control. Includes faliment runout and Emergency Stop input capabilites."
 plugin_author = "jcassel"
 plugin_author_email = "jcassel@softwaresedge.com"
