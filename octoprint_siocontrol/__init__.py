@@ -380,7 +380,7 @@ class SiocontrolPlugin(
         return
 
     def turn_psu_on(self):
-        if Permissions.CONTROL.can() and self._settings.get(["EnablePSUIOPoint"]):
+        if self._settings.get(["EnablePSUIOPoint"]):
             psupoint = self._settings.get(["PSUIOPoint"])
             if self._settings.get(["InvertPSUIOPoint"]):
                 self.conn.send(f"IO {psupoint} 0")
