@@ -380,7 +380,7 @@ class SiocontrolPlugin(
         return
 
     def turn_psu_on(self):
-        if Permissions.CONTROL.can() and self._settings.get(["EnablePSUIOPoint"]):
+        if self._settings.get(["EnablePSUIOPoint"]):
             psupoint = self._settings.get(["PSUIOPoint"])
             if self._settings.get(["InvertPSUIOPoint"]):
                 self.conn.send(f"IO {psupoint} 0")
@@ -406,7 +406,7 @@ class SiocontrolPlugin(
             return False
 
         psuRelayState = self.IOCurrent[int(self._settings.get(["PSUIOPoint"]))]
-        self._logger.info("******Reporting PSU Current State:" + psuRelayState)
+        self._logger.debug("******Reporting PSU Current State:" + psuRelayState)
 
         if self._settings.get(["InvertPSUIOPoint"]):
             rtn = self.IOCurrent[int(self._settings.get(["PSUIOPoint"]))] == "0"
