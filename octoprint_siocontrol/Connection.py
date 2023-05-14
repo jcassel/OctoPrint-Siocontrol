@@ -334,10 +334,10 @@ class Connection:
                             self._logger.debug(f"IO claimed ready for commands:{line}")
                             self.enableCommandQueue = True
 
-                        elif list[:2] == "IT":  # IO type List
+                        elif line[:2] == "IT":  # IO type List
                             self._logger.debug(f"IO Type list sent:{line}")
 
-                        elif list[:2] == "DG":  # Debug Message
+                        elif line[:2] == "DG":  # Debug Message
                             self._logger.debug(f"IO sent debug message:{line}")
 
                         else:
