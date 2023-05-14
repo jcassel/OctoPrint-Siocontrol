@@ -185,7 +185,9 @@ class SiocontrolPlugin(
             self._logger.warning(
                 "The version of PSUControl that is installed does not support plugin registration."
             )
-            self.IOSWarnings = "PSUControl version mistmatch"
+            if self._settings.get(["EnablePSUIOPoint"]):
+                self.IOSWarnings = "PSUControl version mismatch"
+
             return
         else:
             psucontrol_helpers["register_plugin"](self)
