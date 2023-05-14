@@ -277,11 +277,11 @@ class Connection:
                 self._logger.error("error reading from USB")
                 self.stopCommThreads()
 
-        self._logger.info("Write Thread: Thread stopped.")
+        self._logger.debug("Write Thread: Thread stopped.")
 
     def read_thread(self, serialConnection):
         errorCount = 0
-        self._logger.info("Read Thread: Starting thread")
+        self._logger.debug("Read Thread: Starting thread")
         self.enableCommandQueue = False
         while self.readThreadStop is False:
             try:
@@ -314,7 +314,9 @@ class Connection:
 
                         elif line[:2] == "IO":
                             self._logger.debug(f"IO Reported State as:{line}")
-                            if self.plugin.IOCurrent != line[3:]:
+                            if (
+                                self.plugin.IOCurrent != line[3:]
+                            ):  # only react to changes. Maybe future have a timeout somewhere for no reports
                                 self._logger.info(f"IO Reported State as:{line}")
                                 self.plugin.IOCurrent = line[3:]
                                 self.IOCount = len(self.plugin.IOCurrent)
@@ -361,7 +363,7 @@ class Connection:
                 self._logger.error("error reading from USB")
                 self.stopCommThreads()
 
-        self._logger.info("Read Thread: Thread stopped.")
+        self._logger.debug("Read Thread: Thread stopped.")
 
     # serialList was copied from util/comm.py in the core of OctoPrint (that unreachabe section is there too. Not sure what its deal is maybe a false pos)
     def serialList(self):

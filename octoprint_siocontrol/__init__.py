@@ -250,7 +250,7 @@ class SiocontrolPlugin(
             elif command == "turnSioOn":
                 if Permissions.CONTROL.can() and pin >= 0:
                     if self.conn.is_connected():
-                        self._logger.info("Turned on SIO{}".format(configuration["pin"]))
+                        self._logger.debug("Turned on SIO{}".format(configuration["pin"]))
 
                         if configuration["active_mode"] == "active_out_low":
                             self.conn.send(f"IO {pin} 0")
@@ -276,7 +276,9 @@ class SiocontrolPlugin(
             elif command == "turnSioOff":
                 if Permissions.CONTROL.can() and pin >= 0:
                     if self.conn.is_connected():
-                        self._logger.info("Turned off SIO{}".format(configuration["pin"]))
+                        self._logger.debug(
+                            "Turned off SIO{}".format(configuration["pin"])
+                        )
                         if configuration["active_mode"] == "active_out_low":
                             self.conn.send(f"IO {pin} 1")
                             if self.IOCurrent[pin] == "1":
@@ -388,8 +390,11 @@ class SiocontrolPlugin(
                 self.conn.send(f"IO {psupoint} 0")
             else:
                 self.conn.send(f"IO {psupoint} 1")
-
-        self._logger.info("******Switching PSU On: sending command to IO******")
+            self._logger.debug("******Switching PSU On: sending command to IO******")
+        else:
+            self._logger.debug(
+                "******Turn On PSU requested: PSU Integration is not Endabled.******"
+            )
 
     def turn_psu_off(self):
         if self._settings.get(["EnablePSUIOPoint"]):
@@ -398,8 +403,11 @@ class SiocontrolPlugin(
                 self.conn.send(f"IO {psupoint} 1")
             else:
                 self.conn.send(f"IO {psupoint} 0")
-
-        self._logger.info("******Switching PSU Off: sending command to IO******")
+            self._logger.debug("******Switching PSU Off: sending command to IO******")
+        else:
+            self._logger.debug(
+                "******Turn Off PSU requested: PSU Integration is not Endabled.******"
+            )
 
     def get_psu_state(self):
         rtn = None
