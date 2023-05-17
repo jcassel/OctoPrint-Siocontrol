@@ -11,15 +11,6 @@ from . import Connection
 # from time import sleep, time
 
 
-### (Don't forget to remove me)
-# This is a basic skeleton for your plugin's __init__.py. You probably want to adjust the class name of your plugin
-# as well as the plugin mixins it's subclassing from. This is really just a basic skeleton to get you started,
-# defining your plugin as a template plugin, settings and asset plugin. Feel free to add or remove mixins
-# as necessary.
-#
-# Take a look at the documentation on what other plugin mixins are available.
-
-
 class SiocontrolPlugin(
     octoprint.plugin.SettingsPlugin,
     octoprint.plugin.AssetPlugin,
@@ -127,21 +118,14 @@ class SiocontrolPlugin(
                 v = self._settings.get_boolean([k])
 
     def setStartUpIO(self):
-        # Need to workout Non blocking thread with delay or other way to handle the comms to the MC better at startup.
+        # Need to workout Non blocking thread with delay or other way to
+        #  handle the comms to the MC better at startup.
         # Right now this will just not work for some Microcontrollers.
         # Due to the fact that the act of connecting causes it to reset.
         # So it is rebooting while these instructions are sent.
 
         self._logger.info("Setting initial State for Outputs")
         for configuration in self._settings.get(["sio_configurations"]):
-            self._logger.info(
-                "Configured SIO{}: {},{} ({})".format(
-                    configuration["pin"],
-                    configuration["active_mode"],
-                    configuration["default_state"],
-                    configuration["name"],
-                )
-            )
 
             pin = int(configuration["pin"])
 
@@ -157,6 +141,16 @@ class SiocontrolPlugin(
                         self.conn.send(f"IO {pin} 1")
                     elif configuration["default_state"] == "default_off":
                         self.conn.send(f"IO {pin} 0")
+
+            self._logger.info(
+                "Configured SIO{}: {},{} ({}){}".format(
+                    configuration["pin"],
+                    configuration["active_mode"],
+                    configuration["default_state"],
+                    configuration["name"],
+                    configuration["on_nav"],
+                )
+            )
         return
 
     def on_after_startup(self, *args, **kwargs):
@@ -197,6 +191,7 @@ class SiocontrolPlugin(
         return dict(
             turnSioOn=["id"],
             turnSioOff=["id"],
+            toggelSio=["pin"],
             getSioState=["id"],
             getPorts="",
             getIOCounts="",
@@ -205,6 +200,7 @@ class SiocontrolPlugin(
         )
 
     def on_api_command(self, command, data):
+
         if command == "connectIO":
             self._settings.set(["IOSI"], data["si"])
             self._settings.set(["IOBaudRate"], data["baudRate"])
@@ -234,75 +230,97 @@ class SiocontrolPlugin(
         if command == "getIOCounts":
             return flask.jsonify(self.getCounts())
 
-        configuration = self._settings.get(["sio_configurations"])[int(data["id"])]
-        pin = int(configuration["pin"])
-        if pin < len(self.IOCurrent):
-            if command == "getSioState":
-                if pin <= 0:
-                    return flask.jsonify("")
-                elif configuration["active_mode"] == "active_out_low":
-                    rtnJ = flask.jsonify("on" if self.IOCurrent[pin] == "1" else "off")
-                    return rtnJ
-                elif configuration["active_mode"] == "active_out_high":
-                    rtnJ = flask.jsonify("off" if self.IOCurrent[pin] == "1" else "on")
-                    return rtnJ
+        if command == "toggelSio":
+            pin = int(data["pin"])
+            if Permissions.CONTROL.can() and pin >= 0:
+                if self.conn.is_connected():
+                    self._logger.debug("Toggle SIO{}".format(pin))
+                    newState = "0" if self.IOCurrent[pin] == "1" else "1"
+                    self.conn.send(f"IO {pin} {newState}")
+                    return flask.jsonify(f"{pin}: {newState}")
 
-            elif command == "turnSioOn":
-                if Permissions.CONTROL.can() and pin >= 0:
-                    if self.conn.is_connected():
-                        self._logger.debug("Turned on SIO{}".format(configuration["pin"]))
+                else:
+                    self._logger.info(
+                        "Not connected ignored IO command on Pin{}".format(pin)
+                    )
 
-                        if configuration["active_mode"] == "active_out_low":
-                            self.conn.send(f"IO {pin} 0")
-
-                            if self.IOCurrent[pin] == "0":
-                                return flask.jsonify("state: on")
-                            else:
-                                return flask.jsonify("state: off")
-
-                        elif configuration["active_mode"] == "active_out_high":
-                            self.conn.send(f"IO {pin} 1")
-
-                            if self.IOCurrent[pin] == "1":
-                                return flask.jsonify("state: on")
-                            else:
-                                return flask.jsonify("state: off")
-
-                    else:
-                        self._logger.info(
-                            "Not connected ignored IO command on Pin{}".format(pin)
-                        )
-
-            elif command == "turnSioOff":
-                if Permissions.CONTROL.can() and pin >= 0:
-                    if self.conn.is_connected():
-                        self._logger.debug(
-                            "Turned off SIO{}".format(configuration["pin"])
-                        )
-                        if configuration["active_mode"] == "active_out_low":
-                            self.conn.send(f"IO {pin} 1")
-                            if self.IOCurrent[pin] == "1":
-                                return flask.jsonify("state: off")
-                            else:
-                                return flask.jsonify("state: on")
-
-                        elif configuration["active_mode"] == "active_out_high":
-                            self.conn.send(f"IO {pin} 0")
-                            if self.IOCurrent[pin] == "0":
-                                return flask.jsonify("state: off")
-                            else:
-                                return flask.jsonify("state: on")
-
-                    else:
-                        self._logger.info(
-                            "Not connected ignored IO command on Pin{}".format(pin)
-                        )
         else:
-            self.IOSWarnings = "Pin [{}] out of range.".format(pin)
-            self._logger.info("Pin [{}] outof range.".format(pin))
-            self._logger.info(
-                "Max Pin assignment is [{}]".format(len(self.IOCurrent) - 1)
-            )
+            configuration = self._settings.get(["sio_configurations"])[int(data["id"])]
+            pin = int(configuration["pin"])
+
+            if pin < len(self.IOCurrent):
+                if command == "getSioState":
+                    if pin <= 0:
+                        return flask.jsonify("")
+                    elif configuration["active_mode"] == "active_out_low":
+                        rtnJ = flask.jsonify(
+                            "on" if self.IOCurrent[pin] == "1" else "off"
+                        )
+                        return rtnJ
+                    elif configuration["active_mode"] == "active_out_high":
+                        rtnJ = flask.jsonify(
+                            "off" if self.IOCurrent[pin] == "1" else "on"
+                        )
+                        return rtnJ
+
+                elif command == "turnSioOn":
+                    if Permissions.CONTROL.can() and pin >= 0:
+                        if self.conn.is_connected():
+                            self._logger.debug(
+                                "Turned on SIO{}".format(configuration["pin"])
+                            )
+
+                            if configuration["active_mode"] == "active_out_low":
+                                self.conn.send(f"IO {pin} 0")
+
+                                if self.IOCurrent[pin] == "0":
+                                    return flask.jsonify(f"{pin}: on")
+                                else:
+                                    return flask.jsonify(f"{pin}: off")
+
+                            elif configuration["active_mode"] == "active_out_high":
+                                self.conn.send(f"IO {pin} 1")
+
+                                if self.IOCurrent[pin] == "1":
+                                    return flask.jsonify(f"{pin}: on")
+                                else:
+                                    return flask.jsonify(f"{pin}: off")
+
+                        else:
+                            self._logger.info(
+                                "Not connected ignored IO command on Pin{}".format(pin)
+                            )
+
+                elif command == "turnSioOff":
+                    if Permissions.CONTROL.can() and pin >= 0:
+                        if self.conn.is_connected():
+                            self._logger.debug(
+                                "Turned off SIO{}".format(configuration["pin"])
+                            )
+                            if configuration["active_mode"] == "active_out_low":
+                                self.conn.send(f"IO {pin} 1")
+                                if self.IOCurrent[pin] == "1":
+                                    return flask.jsonify(f"{pin}: off")
+                                else:
+                                    return flask.jsonify(f"{pin}: on")
+
+                            elif configuration["active_mode"] == "active_out_high":
+                                self.conn.send(f"IO {pin} 0")
+                                if self.IOCurrent[pin] == "0":
+                                    return flask.jsonify(f"{pin}: off")
+                                else:
+                                    return flask.jsonify(f"{pin}: on")
+
+                        else:
+                            self._logger.info(
+                                "Not connected ignored IO command on Pin{}".format(pin)
+                            )
+            else:
+                self.IOSWarnings = "Pin [{}] out of range.".format(pin)
+                self._logger.info("Pin [{}] outof range.".format(pin))
+                self._logger.info(
+                    "Max Pin assignment is [{}]".format(len(self.IOCurrent) - 1)
+                )
 
     def on_api_get(self, request):
         states = []

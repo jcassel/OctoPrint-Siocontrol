@@ -62,7 +62,8 @@
             <div class="span2"><h4>Label</h4></div>
             <div class="span1"><h4>IO#</h4></div>
             <div class="span3"><h4>Active As</h4></div>
-            <div class="span3"><h4>Default To</h4></div>
+            <div class="span2"><h4>Default To</h4></div>
+            <div class="span1"><h4>Nav?</h4></div>
             <div class="span1"><h4></h4></div>
         </div>
 
@@ -89,11 +90,14 @@
                         <option value="active_in_low">In_LOW</option>
                     </select>
                 </div>
-                <div class="input-prepend span3">
+                <div class="input-prepend span2">
                     <select class="btn-group span12" data-bind="value: default_state">
                         <option value="default_off">OFF</option>
                         <option value="default_on">ON</option>
                     </select>
+                </div>
+                <div class="input-prepend span1">
+                    <input type="checkbox" class="input-block-level" data-bind="checked: on_nav" /> 
                 </div>
                 <div class="span1">
                     <a title="Remove SIO Configuration" class="btn btn-danger" data-bind="click: $parent.removeSioConfiguration">

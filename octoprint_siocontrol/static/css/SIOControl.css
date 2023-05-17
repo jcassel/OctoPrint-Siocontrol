@@ -31,3 +31,11 @@
 .siofntYel {
     color: yellow;
 }
+
+.siocontrol_btOn i {
+    color: #0F0
+}
+
+.siocontrol_btOff i {
+    color: grey
+}

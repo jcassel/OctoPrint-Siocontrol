@@ -94,7 +94,7 @@ class Connection:
                     else:  # all good
                         self.deviceIsCompatible = True
                         self.send("IC")  # que up request for IO Count
-
+                        self.plugin.IOSWarnings = ""
                     # no matter what the result is we are done here.
                     checkingCompatibility = False
 
@@ -317,7 +317,7 @@ class Connection:
                             if (
                                 self.plugin.IOCurrent != line[3:]
                             ):  # only react to changes. Maybe future have a timeout somewhere for no reports
-                                self._logger.info(f"IO Reported State as:{line}")
+                                self._logger.info(f"IO Reported State change as:{line}")
                                 self.plugin.IOCurrent = line[3:]
                                 self.IOCount = len(self.plugin.IOCurrent)
                                 self.checkActionIO()
@@ -360,7 +360,7 @@ class Connection:
             except serial.SerialException:
                 self.disconnect()
                 self._connected = False
-                self._logger.error("error reading from USB")
+                self._logger.error("error reading from USB Comm threads stop called.")
                 self.stopCommThreads()
 
         self._logger.debug("Read Thread: Thread stopped.")
