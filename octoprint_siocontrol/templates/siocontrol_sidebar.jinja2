@@ -27,7 +27,9 @@
     <div class="span2" data-bind="visible: IOStatusMessage() != 'Connected'">
         <button class="btn btn-mini pull-left siofntblk" data-bind="click: connectIO,visible: hasControlPermission()" title="Connect"><i class="fas fa-assistive-listening-systems"></i></button>
     </div>
-    <span class="span8" data-bind="text: IOStatusMessage"></span>
+    <div class="span7">
+        <span data-bind="text: IOStatusMessage"></span>
+    </div>
     <div class="span2">
         <button class="btn btn-mini pull-right" data-bind="click: function(){ settingsViewModel.show('#settings_plugin_siocontrol'); }, visible: hasControlPermission()"><i class="fa fa-gear"></i></button>
     </div>

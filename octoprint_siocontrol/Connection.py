@@ -53,6 +53,10 @@ class Connection:
         self.enableCommandQueue = False
         self.deviceIsCompatible = False
 
+        # this value should eventually be exposed.
+        # It could be different depending on the controler
+        self.iReadTimeoutCounterMax = 15
+
     def getVersionCompatibilty(self):
         self.send("VC")
 
@@ -98,19 +102,40 @@ class Connection:
                     # no matter what the result is we are done here.
                     checkingCompatibility = False
 
-                elif line[:2] == "IO" or line[:2] == "RR":
+                elif (
+                    line[:2] == "IO"
+                    or line[:2] == "RR"
+                    or line[:2] == "DG"
+                    or line[:2] == "IT"
+                ):
                     # ignore
                     self._logger.debug(
                         f"Unexpected(valid) Comm during compatibility check:{line}"
                     )
+                    # Attempt to reset comm and resend VC request
+                    # this can be needed for controllers that reset on connect.
+                    self._logger.debug("resetting comms resending VC request")
+                    self.serialConn.reset_input_buffer()
+                    self.serialConn.reset_output_buffer()
+                    self.serialConn.write("VC\n".encode())
+
                 else:
                     self._logger.debug(
                         f"Unexpected Comm during compatibility check:{line}"
                     )
                     iReadTimeoutCounter = iReadTimeoutCounter + 1
                     self._logger.error(f"IO readtimeout Count:{iReadTimeoutCounter}")
+                    if iReadTimeoutCounter == (
+                        self.iReadTimeoutCounterMax / 2
+                    ):  # Attempt to reset comm and resend VC request
+                        self._logger.debug("resetting comms resending VC request")
+                        self.serialConn.reset_input_buffer()
+                        self.serialConn.reset_output_buffer()
+                        self.serialConn.write(
+                            "VC\n".encode()
+                        )  # request version and compatibility info
 
-                    if iReadTimeoutCounter > 10:
+                    if iReadTimeoutCounter > self.iReadTimeoutCounterMax:
                         self.disconnect()
                         self._connected = False
                         self.stopCommThreads()
@@ -124,7 +149,8 @@ class Connection:
             else:
                 iReadTimeoutCounter = iReadTimeoutCounter + 1
                 self._logger.error(f"IO readtimeout Count:{iReadTimeoutCounter}")
-                if iReadTimeoutCounter > 10:
+
+                if iReadTimeoutCounter > self.iReadTimeoutCounterMax:
                     self.deviceIsCompatible = False
                     # Seems that the device is not responding.
                     checkingCompatibility = False
@@ -168,14 +194,18 @@ class Connection:
                         self._logger.debug("Starting read thread...")
                         self.startCommThreads()
                     else:
-                        self.plugin.IOStatus = "Could not connect to SIO"
+                        self.plugin.IOStatus = "SIO device incompatible"
+                        self._logger.info("SIO device incompatible")
+                        self._connected = False
                 else:
-                    self.plugin.IOStatus = "Could not connect to SIO"
+                    self.plugin.IOStatus = "Could not open port"
+                    self._logger.info("Could not open port")
+                    self._connected = False
             else:
                 self._logger.info(
                     "Connection Information not set. Conneciton to SIO not attempted."
                 )
-                self.plugin.IOStatus = "Connection settings Error"
+                self.plugin.IOStatus = "Conn settings error"
                 self._connected = False
 
         except serial.SerialException as err:
@@ -198,6 +228,13 @@ class Connection:
         if not self._settings.get(["EnableFRSIOPoint"]):
             return
 
+        if (
+            int(self._settings.get(["FRSIOPoint"])) >= len(self.plugin.IOCurrent)
+            or int(self._settings.get(["FRSIOPoint"])) < 0
+        ):
+            self._logger.info("Filament RunOut IO point is out of range.")
+            return
+
         if self._settings.get(["InvertFRSIOPoint"]):
             filamentOut = (
                 self.plugin.IOCurrent[int(self._settings.get(["FRSIOPoint"]))] == "0"
@@ -215,6 +252,13 @@ class Connection:
     def checkEStop(self):
         estopPushed = None
         if not self._settings.get(["EnableESTIOPoint"]):
+            return
+
+        if (
+            int(self._settings.get(["ESTIOPoint"])) >= len(self.plugin.IOCurrent)
+            or int(self._settings.get(["ESTIOPoint"])) < 0
+        ):
+            self._logger.info("E-Stop IO point is out of range.")
             return
 
         if self._settings.get(["InvertESTIOPoint"]):
@@ -280,6 +324,8 @@ class Connection:
         self._logger.debug("Write Thread: Thread stopped.")
 
     def read_thread(self, serialConnection):
+        # need a short delay here for devices that reboot on connect like the nanno
+        time.sleep(1)  # time for write thread to do work.
         errorCount = 0
         self._logger.debug("Read Thread: Starting thread")
         self.enableCommandQueue = False
@@ -296,6 +342,7 @@ class Connection:
                             pass
                         if line[:2] == "VI":
                             self._logger.debug(f"IO Reported Version as:{line}")
+                            errorCount = 0
 
                         elif line[:2] == "CP":
                             self._logger.debug(f"IO Reported Compatibility as:{line}")
@@ -311,6 +358,7 @@ class Connection:
                                 )
                                 self._logger.error("Stopping communications to SIO")
                                 self.stopCommThreads()
+                            errorCount = 0
 
                         elif line[:2] == "IO":
                             self._logger.debug(f"IO Reported State as:{line}")
@@ -335,17 +383,22 @@ class Connection:
                         elif line[:2] == "RR":  # IO ready for commands
                             self._logger.debug(f"IO claimed ready for commands:{line}")
                             self.enableCommandQueue = True
+                            errorCount = 0
 
                         elif line[:2] == "IT":  # IO type List
-                            self._logger.debug(f"IO Type list sent:{line}")
+                            self._logger.debug(f"IO Type list recieved:{line}")
+                            errorCount = 0
 
                         elif line[:2] == "DG":  # Debug Message
                             self._logger.debug(f"IO sent debug message:{line}")
+                            errorCount = 0
 
                         else:
-                            self._logger.debug(f"IO sent:{line}")  # error?
+                            self._logger.debug(
+                                f"IO an unexpected data line: {line}"
+                            )  # error?
                             errorCount = errorCount + 1
-                            if errorCount > 9:
+                            if errorCount > self.iReadTimeoutCounterMax:
                                 self.plugin.IOCurrent = ""
                                 self.IOCount = 0
                                 self.disconnect()

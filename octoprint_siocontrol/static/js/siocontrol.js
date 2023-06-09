@@ -120,6 +120,7 @@ $(function () {
 
         self.onSettingsShown = function () {
             self.sioConfigurations(self.settingsViewModel.settings.plugins.siocontrol.sio_configurations.slice(0));
+            //self.sioScriptAlignments(self.settingsViewModel.settings.plugins.siocontrol.sio_ScriptAlignments.slice(0));
             self.updateIconPicker();
         };
 
@@ -132,6 +133,8 @@ $(function () {
             self.sioConfigurations.push({ pin: 0, icon: "fas fa-plug", name: "", active_mode: "active_out_high", default_state: "default_off", on_nav: 0 });
             self.updateIconPicker();
         };
+
+
 
         self.removeSioConfiguration = function (configuration) {
             self.sioConfigurations.remove(configuration);
@@ -187,6 +190,15 @@ $(function () {
                 }
 
             });
+        };
+
+
+        self.addSioScriptAlignment = function () {
+            self.sioScriptAlignments.push({ name: "", pin: -1, trigger_type: "" });
+        };
+
+        self.removeSioScriptAlignment = function (alignments) {
+            self.sioScriptAlignments.remove(alignments);
         };
 
         self.getStatusMessage = function () {

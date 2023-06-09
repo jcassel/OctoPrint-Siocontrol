@@ -1,6 +1,8 @@
 # coding=utf-8
 from __future__ import absolute_import, print_function
 
+import time
+
 import flask
 
 import octoprint.plugin
@@ -123,8 +125,10 @@ class SiocontrolPlugin(
         # Right now this will just not work for some Microcontrollers.
         # Due to the fact that the act of connecting causes it to reset.
         # So it is rebooting while these instructions are sent.
+        # 2023-5-19 I this is is mostly worked out now. With the way the resend of VC works.
 
         self._logger.info("Setting initial State for Outputs")
+
         for configuration in self._settings.get(["sio_configurations"]):
 
             pin = int(configuration["pin"])
@@ -166,8 +170,8 @@ class SiocontrolPlugin(
             self.conn.send("SI " + self._settings.get(["IOSI"]))
             self.setStartUpIO()
         else:
-            self.IOStatus = "Could not connect Serial IO"
-            self._logger.error("Could not connect Serial IO")
+            self.IOStatus = "Could not connect SIO"
+            self._logger.error("Could not connect SIO")
             self._logger.info("IOSI:" + str(self._settings.get(["IOSI"])))
             self._logger.info("IOPort:" + str(self._settings.get(["IOPort"])))
             self._logger.info("IOPorts:" + str(self._settings.get(["IOPorts"])))
@@ -232,6 +236,13 @@ class SiocontrolPlugin(
 
         if command == "toggelSio":
             pin = int(data["pin"])
+
+            if pin >= len(self.IOCurrent) or pin < 0:
+                self._logger.info(
+                    "Toggle command ignored, Pin assignment out of range: {}".format(pin)
+                )
+                return
+
             if Permissions.CONTROL.can() and pin >= 0:
                 if self.conn.is_connected():
                     self._logger.debug("Toggle SIO{}".format(pin))
@@ -432,16 +443,21 @@ class SiocontrolPlugin(
 
         if self.IOCurrent is None:
             return False
+        if len(self.IOCurrent) >= int(self._settings.get(["PSUIOPoint"])):
 
-        psuRelayState = self.IOCurrent[int(self._settings.get(["PSUIOPoint"]))]
-        self._logger.debug("******Reporting PSU Current State:" + psuRelayState)
+            psuRelayState = self.IOCurrent[int(self._settings.get(["PSUIOPoint"]))]
+            self._logger.debug("******Reporting PSU Current State:" + psuRelayState)
 
-        if self._settings.get(["InvertPSUIOPoint"]):
-            rtn = self.IOCurrent[int(self._settings.get(["PSUIOPoint"]))] == "0"
+            if self._settings.get(["InvertPSUIOPoint"]):
+                rtn = self.IOCurrent[int(self._settings.get(["PSUIOPoint"]))] == "0"
+            else:
+                rtn = self.IOCurrent[int(self._settings.get(["PSUIOPoint"]))] == "1"
+
+            return rtn
         else:
-            rtn = self.IOCurrent[int(self._settings.get(["PSUIOPoint"]))] == "1"
-
-        return rtn
+            self._logger.debug(
+                "Cant get PSU State due to lack of reporting from SIO Control"
+            )
 
     ##~~ AssetPlugin mixin
 
