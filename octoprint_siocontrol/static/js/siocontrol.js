@@ -162,32 +162,32 @@ $(function () {
                     }
                 }
 
-                if (updateBtns) {
+                //if (updateBtns) {
 
-                    self.sioButtons(ko.toJS(self.sioConfigurations).map(function (item) {
-                        return {
-                            icon: item.icon,
-                            name: item.name,
-                            current_state: "unknown",
-                            active_mode: item.active_mode,
-                            pin: item.pin,
-                            on_nav: item.on_nav,
-                        }
-                    }));
+                self.sioButtons(ko.toJS(self.sioConfigurations).map(function (item) {
+                    return {
+                        icon: item.icon,
+                        name: item.name,
+                        current_state: "unknown",
+                        active_mode: item.active_mode,
+                        pin: item.pin,
+                        on_nav: item.on_nav,
+                    }
+                }));
 
-                    self.sioButtons().forEach(function (item, index) {
-                        self.sioButtons.replace(item, {
-                            icon: item.icon,
-                            name: item.name,
-                            current_state: states[index],
-                            active_mode: item.active_mode,
-                            pin: item.pin,
-                            on_nav: item.on_nav,
-                        });
-
-                        //removeClass("off").addClass("on");    
+                self.sioButtons().forEach(function (item, index) {
+                    self.sioButtons.replace(item, {
+                        icon: item.icon,
+                        name: item.name,
+                        current_state: states[index],
+                        active_mode: item.active_mode,
+                        pin: item.pin,
+                        on_nav: item.on_nav,
                     });
-                }
+
+                    //removeClass("off").addClass("on");    
+                });
+                //}
 
             });
         };

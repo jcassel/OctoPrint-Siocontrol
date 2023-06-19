@@ -45,7 +45,9 @@ class SiocontrolPlugin(
             "9000",
             "10000",
         ]
-        self._settings.set(["IOPorts"], self.conn.serialList())
+        # self._settings.set(["IOPorts"], self.conn.serialList())
+        avalPorts = self.get_AvaliblePorts()
+        self._settings.set(["IOPorts"], avalPorts)
         self._settings.set(["IOCounts"], self.getCounts())
 
         return {
@@ -191,6 +193,15 @@ class SiocontrolPlugin(
             psucontrol_helpers["register_plugin"](self)
             self._logger.info("Regester as Sub Plugin to PSUControl")
 
+    def get_AvaliblePorts(self):
+        avalPorts = self.conn.serialList()
+        if str(self._settings.get(["IOPort"])) != "None":
+            commPort = str(self._settings.get(["IOPort"]))
+            if avalPorts.index(commPort) < 0:
+                avalPorts.append(str(self._settings.get(["IOPort"])))
+
+        return avalPorts
+
     def get_api_commands(self):
         return dict(
             turnSioOn=["id"],
@@ -227,7 +238,7 @@ class SiocontrolPlugin(
             return flask.jsonify(self.IOStatus, self.IOSWarnings)
 
         if command == "getPorts":
-            avalPorts = self.conn.serialList()
+            avalPorts = self.get_AvaliblePorts()
             self._settings.set(["IOPorts"], avalPorts)
             return flask.jsonify(avalPorts)
 
