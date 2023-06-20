@@ -108,7 +108,41 @@ class SiocontrolPlugin(
 
     def on_settings_initialized(self):
         self.reload_settings()
+        self.clean_Settings()
         return super().on_settings_initialized()
+
+    def clean_Settings(self):
+        # do what is needed to make sure old settings will stay working on an update.
+        upDatedConfigs = []
+        # add Nav Attribute to IO configs
+        for configuration in self._settings.get(["sio_configurations"]):
+            try:
+                if configuration["on_nav"]:
+                    self._logger.debug(
+                        "Settings have({}) : on_nav, adding on_nav = false".format(
+                            configuration["name"]
+                        )
+                    )
+                    return
+
+            except Exception:
+                upDatedConfigs.append(
+                    {
+                        "active_mode": configuration["active_mode"],
+                        "default_state": configuration["default_state"],
+                        "icon": configuration["icon"],
+                        "name": configuration["name"],
+                        "on_nav": False,
+                        "pin": configuration["pin"],
+                    }
+                )
+
+                self._logger.info(
+                    "Settings missing({}) : on_nav, adding on_nav = false".format(
+                        configuration["name"]
+                    )
+                )
+                self._settings.set(["sio_configurations"], upDatedConfigs)
 
     def reload_settings(self):
         for k, v in self.get_settings_defaults().items():
@@ -157,6 +191,7 @@ class SiocontrolPlugin(
                     configuration["on_nav"],
                 )
             )
+
         return
 
     def on_after_startup(self, *args, **kwargs):
@@ -195,10 +230,15 @@ class SiocontrolPlugin(
 
     def get_AvaliblePorts(self):
         avalPorts = self.conn.serialList()
-        if str(self._settings.get(["IOPort"])) != "None":
-            commPort = str(self._settings.get(["IOPort"]))
-            if avalPorts.index(commPort) < 0:
-                avalPorts.append(str(self._settings.get(["IOPort"])))
+        try:
+            if str(self._settings.get(["IOPort"])) != "None":
+                commPort = str(self._settings.get(["IOPort"]))
+                if avalPorts.index(commPort) < 0:
+                    avalPorts.append(str(self._settings.get(["IOPort"])))
+        except Exception:
+            self._logger.warning(
+                "Looks like No Comm port was selected yet. List of avalible ports may need to be refreshed."
+            )
 
         return avalPorts
 
@@ -473,12 +513,10 @@ class SiocontrolPlugin(
     ##~~ AssetPlugin mixin
 
     def get_assets(self):
-        # Define your plugin's asset files to automatically include in the
-        # core UI here.
-        # "less": ["less/PSUControlSerial.less"],
+        self._logger.info("Running get_assets")
         return dict(
+            css=["css/SIOControl.css", "css/fontawesome-iconpicker.min.css"],
             js=["js/siocontrol.js", "js/fontawesome-iconpicker.min.js"],
-            css=["css/siocontrol.css", "css/fontawesome-iconpicker.min.css"],
         )
 
     ##~~ Softwareupdate hook
