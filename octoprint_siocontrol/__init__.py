@@ -216,13 +216,17 @@ class SiocontrolPlugin(
             self._logger.info("IOBaudRates" + str(self._settings.get(["IOBaudRates"])))
 
         psucontrol_helpers = self._plugin_manager.get_helpers("psucontrol")
-        if not psucontrol_helpers or "register_plugin" not in psucontrol_helpers.keys():
+        if not psucontrol_helpers:
+            self._logger.warning("PSUControl Plugin not found.")
+            return
+
+        elif "register_plugin" not in psucontrol_helpers.keys():
             self._logger.warning(
                 "The version of PSUControl that is installed does not support plugin registration."
             )
+
             if self._settings.get(["EnablePSUIOPoint"]):
                 self.IOSWarnings = "PSUControl version mismatch"
-
             return
         else:
             psucontrol_helpers["register_plugin"](self)
