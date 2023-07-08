@@ -31,3 +31,33 @@
 .siofntYel {
     color: yellow;
 }
+
+.siocontrol_btOn i {
+    color: #0F0
+}
+
+.siocontrol_btOff i {
+    color: grey
+}
+
+.siocontrol_outliner {
+    outline: 1px solid orange;
+}
+
+.siocontrol_InNumber {
+    width: 100%;
+
+}
+
+.siocontrol_scriptList {
+    width: 120px;
+}
+
+.siocontrol_label {
+    margin-top: 5px;
+}
+
+.siocontrol_textName {
+    width: 100%;
+
+}

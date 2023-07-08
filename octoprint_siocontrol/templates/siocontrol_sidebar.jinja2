@@ -21,17 +21,19 @@
     </div>
 </div>
 <div class="row-fluid">
-    <div data-bind="visible: IOStatusMessage() == 'Connected'">
+    <div class="span2" data-bind="visible: IOStatusMessage() == 'Connected'">
         <button class="btn btn-mini pull-left siofntGrn" data-bind="click: connectIO,visible: hasControlPermission()" title="Connect"><i class="fas fa-assistive-listening-systems"></i></button>
     </div>
-    <div data-bind="visible: IOStatusMessage() != 'Connected'">
+    <div class="span2" data-bind="visible: IOStatusMessage() != 'Connected'">
         <button class="btn btn-mini pull-left siofntblk" data-bind="click: connectIO,visible: hasControlPermission()" title="Connect"><i class="fas fa-assistive-listening-systems"></i></button>
     </div>
-    <span class="span4" data-bind="text: IOStatusMessage"></span>
-    <div>
-        <button class="btn btn-mini pull-right" data-bind="click: function(){ settingsViewModel.show('#settings_plugin_siocontrol'); }, visible: hasControlPermission()" style=""><i class="fa fa-gear"></i></button>
+    <div class="span7">
+        <span data-bind="text: IOStatusMessage"></span>
+    </div>
+    <div class="span2">
+        <button class="btn btn-mini pull-right" data-bind="click: function(){ settingsViewModel.show('#settings_plugin_siocontrol'); }, visible: hasControlPermission()"><i class="fa fa-gear"></i></button>
     </div>
 </div>
 <div class="row-fluid">
-    <div><span class="span4" data-bind="text: IOSWarnings"></span></div>
+    <div><span class="span12" data-bind="text: IOSWarnings"></span></div>
 </div>

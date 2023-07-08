@@ -11,6 +11,7 @@ $(function () {
         self.controlViewModel = parameters[1];
         self.loginStateViewModel = parameters[2];
         self.accessViewModel = parameters[3];
+
         self.sioButtons = ko.observableArray();
         self.sioConfigurations = ko.observableArray();
         self.SIO_IOCounts = ko.observableArray();
@@ -119,6 +120,7 @@ $(function () {
 
         self.onSettingsShown = function () {
             self.sioConfigurations(self.settingsViewModel.settings.plugins.siocontrol.sio_configurations.slice(0));
+            //self.sioScriptAlignments(self.settingsViewModel.settings.plugins.siocontrol.sio_ScriptAlignments.slice(0));
             self.updateIconPicker();
         };
 
@@ -128,9 +130,11 @@ $(function () {
         };
 
         self.addSioConfiguration = function () {
-            self.sioConfigurations.push({ pin: 0, icon: "fas fa-plug", name: "", active_mode: "active_out_high", default_state: "default_off" });
+            self.sioConfigurations.push({ pin: 0, icon: "fas fa-plug", name: "", active_mode: "active_out_high", default_state: "default_off", on_nav: 0 });
             self.updateIconPicker();
         };
+
+
 
         self.removeSioConfiguration = function (configuration) {
             self.sioConfigurations.remove(configuration);
@@ -158,28 +162,43 @@ $(function () {
                     }
                 }
 
-                if (updateBtns) {
+                //if (updateBtns) {
 
-                    self.sioButtons(ko.toJS(self.sioConfigurations).map(function (item) {
-                        return {
-                            icon: item.icon,
-                            name: item.name,
-                            current_state: "unknown",
-                            active_mode: item.active_mode,
-                        }
-                    }));
+                self.sioButtons(ko.toJS(self.sioConfigurations).map(function (item) {
+                    return {
+                        icon: item.icon,
+                        name: item.name,
+                        current_state: "unknown",
+                        active_mode: item.active_mode,
+                        pin: item.pin,
+                        on_nav: item.on_nav,
+                    }
+                }));
 
-                    self.sioButtons().forEach(function (item, index) {
-                        self.sioButtons.replace(item, {
-                            icon: item.icon,
-                            name: item.name,
-                            current_state: states[index],
-                            active_mode: item.active_mode,
-                        });
+                self.sioButtons().forEach(function (item, index) {
+                    self.sioButtons.replace(item, {
+                        icon: item.icon,
+                        name: item.name,
+                        current_state: states[index],
+                        active_mode: item.active_mode,
+                        pin: item.pin,
+                        on_nav: item.on_nav,
                     });
-                }
+
+                    //removeClass("off").addClass("on");    
+                });
+                //}
 
             });
+        };
+
+
+        self.addSioScriptAlignment = function () {
+            self.sioScriptAlignments.push({ name: "", pin: -1, trigger_type: "" });
+        };
+
+        self.removeSioScriptAlignment = function (alignments) {
+            self.sioScriptAlignments.remove(alignments);
         };
 
         self.getStatusMessage = function () {
@@ -218,19 +237,33 @@ $(function () {
             });
         }
 
-
-        self.turnSioOn = function () {
-            OctoPrint.simpleApiCommand("siocontrol", "turnSioOn", { id: self.sioButtons.indexOf(this) }).then(function (state) {
+        self.toggleSioByIONumber = function (sioPin) {
+            OctoPrint.simpleApiCommand("siocontrol", "toggelSio", { pin: sioPin }).then(function (state) {
                 //self.sioButtons.indexOf(this)["current_state"] = state;
             });
             self.updateSioButtons();
         }
 
-        self.turnSioOff = function () {
-            OctoPrint.simpleApiCommand("siocontrol", "turnSioOff", { id: self.sioButtons.indexOf(this) }).then(function (state) {
+        self.turnSioOnByIONumber = function (sioId) {
+            OctoPrint.simpleApiCommand("siocontrol", "turnSioOn", { id: sioId }).then(function (state) {
                 //self.sioButtons.indexOf(this)["current_state"] = state;
             });
             self.updateSioButtons();
+        }
+
+        self.turnSioOffByIONumber = function (sioId) {
+            OctoPrint.simpleApiCommand("siocontrol", "turnSioOff", { id: sioId }).then(function (state) {
+                //self.sioButtons.indexOf(this)["current_state"] = state; 
+            });
+            self.updateSioButtons();
+        }
+
+        self.turnSioOn = function () {
+            self.turnSioOnByIONumber(self.sioButtons.indexOf(this));
+        }
+
+        self.turnSioOff = function () {
+            self.turnSioOffByIONumber(self.sioButtons.indexOf(this));
         }
 
         self.getBtnCls = function () {
@@ -262,6 +295,6 @@ $(function () {
     OCTOPRINT_VIEWMODELS.push({
         construct: SioControlViewModel,
         dependencies: ["settingsViewModel", "controlViewModel", "loginStateViewModel", "accessViewModel"],
-        elements: ["#settings_plugin_siocontrol", "#sidebar_plugin_siocontrol"]
+        elements: ["#settings_plugin_siocontrol", "#sidebar_plugin_siocontrol", "#navbar_plugin_siocontrol"]
     });
 });

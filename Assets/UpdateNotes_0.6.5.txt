@@ -1,0 +1,5 @@
+SIO Control PlugIn Update notes
+
+-Fixed small bug in allignment for message at bottom of side navigation
+-Added ability to display IO control button on top Navigation bar
+-Updated UI for settings into TAbs to make it easier to manage additional settings. 

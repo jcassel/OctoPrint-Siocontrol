@@ -1,0 +1,3 @@
+<div data-bind="foreach: sioButtons">
+    <button class="btn " data-bind="visible: on_nav ==1, click:function(){$parent.toggleSioByIONumber(pin);},css:{'siocontrol_btOn':current_state =='on','siocontrol_btOff': current_state == 'off'}"><i data-bind="class: icon" style="font-size: 1.3em; cursor: pointer; user-select: none"></i>
+</div>
