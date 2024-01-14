@@ -411,9 +411,7 @@ class SiocontrolPlugin(
                         states.append(pstate)
                 else:
                     if self.conn is not None and self.conn.is_connected() is True:
-                        self._logger.info(
-                            f"Pin number assigned to IO control{pin=} maybe out of range."
-                        )
+                        self._logger.info("Pin number assigned to IO control{} maybe out of range.".format(pin))
 
                     states.append("off")
             else:
