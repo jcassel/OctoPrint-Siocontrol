@@ -75,25 +75,19 @@ class Connection:
                 except Exception:
                     pass
                 if line[:2] == "VI":
-                    self._logger.debug(f"IO Reported Version as:{line[3:]=}")
+                    self._logger.debug("IO Reported Version as:{}".format(line[3:]))
 
                 elif line[:2] == "CP":
-                    self._logger.debug(f"IO Reported Compatibility as:{line=}")
+                    self._logger.debug("IO Reported Compatibility as:{}".format(line))
                     if line[3:] != self.plugin.DeviceCompatibleVersion:
-                        self._logger.info(f"IO Reported Compatibility as:{line=}")
-                        self._logger.info(
-                            f"Required Compatibility is:{self.plugin.DeviceCompatibleVersion=}"
-                        )
+                        self._logger.info("IO Reported Compatibility as:{}".format(line))
+                        self._logger.info("Required Compatibility is:{}".format(self.plugin.DeviceCompatibleVersion))
                         self.disconnect()
                         self._connected = False
-                        self._logger.error(
-                            "IO Not compatible with this version of SIOPlugin"
-                        )
+                        self._logger.error("IO Not compatible with this version of SIOPlugin")
                         self._logger.error("Stopping communications to SIO")
                         self.stopCommThreads()
-                        self.plugin.IOSWarnings = (
-                            "Conneced to encompatible device. Check Comm port setting"
-                        )
+                        self.plugin.IOSWarnings = ("Conneced to encompatible device. Check Comm port setting")
                         self.deviceIsCompatible = False
                     else:  # all good
                         self.deviceIsCompatible = True
@@ -102,53 +96,38 @@ class Connection:
                     # no matter what the result is we are done here.
                     checkingCompatibility = False
 
-                elif (
-                    line[:2] == "IO"
-                    or line[:2] == "RR"
-                    or line[:2] == "DG"
-                    or line[:2] == "IT"
-                ):
+                elif (line[:2] == "IO" or line[:2] == "RR" or line[:2] == "IT"):
                     # ignore
-                    self._logger.debug(
-                        f"Unexpected(valid) Comm during compatibility check:{line}"
-                    )
+                    self._logger.debug("Unexpected(valid) Comm during compatibility check:{}".format(line))
                     # Attempt to reset comm and resend VC request
                     # this can be needed for controllers that reset on connect.
                     self._logger.debug("resetting comms resending VC request")
                     self.serialConn.reset_input_buffer()
                     self.serialConn.reset_output_buffer()
                     self.serialConn.write("VC\n".encode())
-
+                elif line[:2] == "DG":
+                    # truly ignore
+                    self._logger.debug("Unexpected(valid) debug Comm during compatibility check:{}".format(line))
                 else:
-                    self._logger.debug(
-                        f"Unexpected Comm during compatibility check:{line}"
-                    )
+                    self._logger.debug("Unexpected Comm during compatibility check:{}".format(line))
                     iReadTimeoutCounter = iReadTimeoutCounter + 1
-                    self._logger.error(f"IO readtimeout Count:{iReadTimeoutCounter}")
-                    if iReadTimeoutCounter == (
-                        self.iReadTimeoutCounterMax / 2
-                    ):  # Attempt to reset comm and resend VC request
+                    self._logger.error("IO readtimeout Count:{}".format(iReadTimeoutCounter))
+                    if iReadTimeoutCounter == (self.iReadTimeoutCounterMax / 2):  # Attempt to reset comm and resend VC request
                         self._logger.debug("resetting comms resending VC request")
                         self.serialConn.reset_input_buffer()
                         self.serialConn.reset_output_buffer()
-                        self.serialConn.write(
-                            "VC\n".encode()
-                        )  # request version and compatibility info
+                        self.serialConn.write("VC\n".encode())  # request version and compatibility info
 
                     if iReadTimeoutCounter > self.iReadTimeoutCounterMax:
                         self.disconnect()
                         self._connected = False
                         self.stopCommThreads()
-                        self.plugin.IOSWarnings = (
-                            "Conneced to encompatible device. Check Comm port setting"
-                        )
-                        self.deviceIsCompatible = False
-                        # Seems that the device is not responding.
+                        self.plugin.IOSWarnings = ("Conneced to encompatible device. Check Comm port setting")
+                        self.deviceIsCompatible = False  # Seems that the device is not responding.
                         checkingCompatibility = False
-
             else:
                 iReadTimeoutCounter = iReadTimeoutCounter + 1
-                self._logger.error(f"IO readtimeout Count:{iReadTimeoutCounter}")
+                self._logger.error("IO readtimeout Count:{}".format(iReadTimeoutCounter))
 
                 if iReadTimeoutCounter > self.iReadTimeoutCounterMax:
                     self.deviceIsCompatible = False
@@ -169,10 +148,7 @@ class Connection:
 
     def connect(self):
         try:
-            if (
-                str(self._settings.get(["IOPort"])) != "None"
-                and str(self._settings.get(["IOBaudRate"])) != "None"
-            ):
+            if (str(self._settings.get(["IOPort"])) != "None" and str(self._settings.get(["IOBaudRate"])) != "None"):
                 self._logger.info("Connecting...")
                 self._logger.info("Port:" + self._settings.get(["IOPort"]))
                 self._logger.info("IOBaudRate:" + self._settings.get(["IOBaudRate"]))
@@ -202,9 +178,7 @@ class Connection:
                     self._logger.info("Could not open port")
                     self._connected = False
             else:
-                self._logger.info(
-                    "Connection Information not set. Conneciton to SIO not attempted."
-                )
+                self._logger.info("Connection Information not set. Conneciton to SIO not attempted.")
                 self.plugin.IOStatus = "Conn settings error"
                 self._connected = False
 
@@ -212,10 +186,10 @@ class Connection:
             self.commandQueue = []
             self._logger.debug("cleared Command queue")
             self._logger.debug("Connection failed!")
-            self._logger.exception(f"Serial Exception: {err=}, {type(err)=}")
+            self._logger.exception("Serial Exception: {}, {}".format(err,type(err)))
 
         except Exception as err:
-            self._logger.exception(f"Unexpected {err=}, {type(err)=}")
+            self._logger.exception("Unexpected {}, {}".format(err,type(err)))
 
     def Update_IOSI(self, value):
         self.send("SI " + value)
@@ -229,20 +203,15 @@ class Connection:
             return
 
         if (
-            int(self._settings.get(["FRSIOPoint"])) >= len(self.plugin.IOCurrent)
-            or int(self._settings.get(["FRSIOPoint"])) < 0
+            int(self._settings.get(["FRSIOPoint"])) >= len(self.plugin.IOCurrent) or int(self._settings.get(["FRSIOPoint"])) < 0
         ):
             self._logger.info("Filament RunOut IO point is out of range.")
             return
 
         if self._settings.get(["InvertFRSIOPoint"]):
-            filamentOut = (
-                self.plugin.IOCurrent[int(self._settings.get(["FRSIOPoint"]))] == "0"
-            )
+            filamentOut = (self.plugin.IOCurrent[int(self._settings.get(["FRSIOPoint"]))] == "0")
         else:
-            filamentOut = (
-                self.plugin.IOCurrent[int(self._settings.get(["FRSIOPoint"]))] == "1"
-            )
+            filamentOut = (self.plugin.IOCurrent[int(self._settings.get(["FRSIOPoint"]))] == "1")
 
         if filamentOut:
             if self._printer.is_printing():
@@ -255,8 +224,7 @@ class Connection:
             return
 
         if (
-            int(self._settings.get(["ESTIOPoint"])) >= len(self.plugin.IOCurrent)
-            or int(self._settings.get(["ESTIOPoint"])) < 0
+            int(self._settings.get(["ESTIOPoint"])) >= len(self.plugin.IOCurrent) or int(self._settings.get(["ESTIOPoint"])) < 0
         ):
             self._logger.info("E-Stop IO point is out of range.")
             return
@@ -274,7 +242,7 @@ class Connection:
             self._printer.commands(["M112"])
 
     def send(self, data):
-        self.commandQueue.append(f"{data}\n".encode())
+        self.commandQueue.append("{}\n".format(data).encode())  # f"{data}\n".encode()
         self._logger.debug("Queueing Command: %s" % data)
 
     def write_thread(self, serialConnection):
@@ -292,7 +260,7 @@ class Connection:
                     else:
                         command = self.commandQueue[0]
                         serialConnection.write(command)
-                        self._logger.debug(f"SOI Sent:{command}")
+                        self._logger.debug("SOI Sent:{}".format(command))
 
                     time.sleep(0.1)
                     line = serialConnection.readline()
@@ -301,7 +269,7 @@ class Connection:
                             line = line.strip().decode()
                         except Exception:
                             pass
-                        self._logger.debug(f">IO Responded with:{line}")
+                        self._logger.debug(">IO Responded with:{}".format(line))
                         if line[:2] == "OK" and command != "EIO-NoPop":
                             pcommand = self.commandQueue.pop(0)
                             self._logger.debug("Poped Command: %s" % pcommand)
@@ -341,39 +309,34 @@ class Connection:
                         except Exception:
                             pass
                         if line[:2] == "VI":
-                            self._logger.debug(f"IO Reported Version as:{line}")
+                            self._logger.debug("IO Reported Version as:{}".format(line))
                             errorCount = 0
 
                         elif line[:2] == "CP":
-                            self._logger.debug(f"IO Reported Compatibility as:{line}")
+                            self._logger.debug("IO Reported Compatibility as:{}".format(line))
                             if line[3:] != self.plugin.DeviceCompatibleVersion:
-                                self._logger.info(f"IO Reported Compatibility as:{line}")
-                                self._logger.info(
-                                    f"Required Compatibility is:{self.plugin.DeviceCompatibleVersion=}"
-                                )
+                                self._logger.info("IO Reported Compatibility as:{}".format(line))
+                                self._logger.info("Required Compatibility is:{}".format(self.plugin.DeviceCompatibleVersion))
                                 self.disconnect()
                                 self._connected = False
-                                self._logger.error(
-                                    "IO Not compatible with this version of SIOPlugin"
-                                )
+                                self._logger.error("IO Not compatible with this version of SIOPlugin")
                                 self._logger.error("Stopping communications to SIO")
                                 self.stopCommThreads()
                             errorCount = 0
 
                         elif line[:2] == "IO":
-                            self._logger.debug(f"IO Reported State as:{line}")
-                            if (
-                                self.plugin.IOCurrent != line[3:]
-                            ):  # only react to changes. Maybe future have a timeout somewhere for no reports
-                                self._logger.info(f"IO Reported State change as:{line}")
+                            self._logger.debug("IO Reported State as:{}".format(line))
+                            if (self.plugin.IOCurrent != line[3:]):  # only react to changes. Maybe future have a timeout somewhere for no reports
+                                self._logger.info("IO Reported State change as:{}".format(line))
                                 self.plugin.IOCurrent = line[3:]
                                 self.IOCount = len(self.plugin.IOCurrent)
                                 self.checkActionIO()
+                                self.plugin.broadCastStateToSubPlugins()  # calls methods in Sub plugins for changed IO state.
 
                             errorCount = 0
 
                         elif line[:2] == "OK":
-                            self._logger.debug(f"IO Responded with:{line}")
+                            self._logger.debug("IO Responded with:{}".format(line))
                             errorCount = 0
 
                         elif line[:2] == "IC":  # explicit report IO count.
@@ -381,22 +344,21 @@ class Connection:
                             errorCount = 0
 
                         elif line[:2] == "RR":  # IO ready for commands
-                            self._logger.debug(f"IO claimed ready for commands:{line}")
+                            self._logger.debug("IO claimed ready for commands:{}".format(line))
                             self.enableCommandQueue = True
                             errorCount = 0
 
                         elif line[:2] == "IT":  # IO type List
-                            self._logger.debug(f"IO Type list recieved:{line}")
+                            self._logger.debug("IO Type list recieved:{}".format(line))
                             errorCount = 0
 
                         elif line[:2] == "DG":  # Debug Message
-                            self._logger.debug(f"IO sent debug message:{line}")
+                            self._logger.debug("IO sent debug message:{}".format(line))
                             errorCount = 0
-
+                        elif line[:2] == "FS":  # 4MB with spiffs(1.2MB APP/1.5 SPIFFS) This is expected firmware format
+                            errorCount = 0
                         else:
-                            self._logger.debug(
-                                f"IO an unexpected data line: {line}"
-                            )  # error?
+                            self._logger.debug("IO an unexpected data line: {}".format(line))  # error?
                             errorCount = errorCount + 1
                             if errorCount > self.iReadTimeoutCounterMax:
                                 self.plugin.IOCurrent = ""
@@ -436,9 +398,9 @@ class Connection:
             except Exception as err:
                 # [22] happens on windows machines. This is normal.
                 if err.errno == 22:
-                    self._logger.debug(f"Unexpected(windows OK) {err=}, {type(err)=}")
+                    self._logger.debug("Unexpected(windows OK) {}, {}".format(err,type(err)))
                 else:
-                    self._logger.exception(f"Unexpected {err=}, {type(err)=}")
+                    self._logger.exception("Unexpected {}, {}".format(err,type(err)))
 
                 pass
         else:
@@ -470,7 +432,7 @@ class Connection:
                     candidates += hook(candidates)
 
             except Exception:
-                self._logger.exception(
+                self._logger.info(
                     "Error while retrieving additional "
                     "serial port names from hook {}".format(name)
                 )
