@@ -46,7 +46,7 @@ $(function () {
 
         self.onBeforeBinding = function () {
             self.sioConfigurations(self.settingsViewModel.settings.plugins.siocontrol.sio_configurations.slice(0));
-
+                
 
             if (self.SIO_Port != null) {
                 if (self.SIO_IOCounts().length == 0) {

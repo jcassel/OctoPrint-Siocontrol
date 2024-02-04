@@ -1,12 +1,14 @@
 # coding=utf-8
 from __future__ import absolute_import, print_function
 
+import threading
 import time
 
 import flask
 
 import octoprint.plugin
 from octoprint.access.permissions import Permissions
+from octoprint.util import fqfn
 
 from . import Connection
 
@@ -22,9 +24,11 @@ class SiocontrolPlugin(
     octoprint.plugin.RestartNeedingPlugin,
 ):
     def __init__(self):
-        # self.config = dict()
+        self.config = dict()
+        self._sub_plugins = dict()
         self.DeviceCompatibleVersion = "SIOPlugin 0.1.1"
         self.IOCurrent = None
+        self._lastIOCurent = None
         self.IOStatus = "Ready"
         self.IOSWarnings = ""
         self.conn = None  # Connection.Connection(self)
@@ -50,7 +54,15 @@ class SiocontrolPlugin(
         self._settings.set(["IOPorts"], avalPorts)
         self._settings.set(["IOCounts"], self.getCounts())
 
+        self.has_SIOC = False
+        available_plugins = []
+        for k in list(self._sub_plugins.keys()):
+            available_plugins.append(dict(pluginIdentifier=k, displayName=self._plugin_manager.plugins[k].name))
+            if k == "": # I think this should be != but leaving for now. also maybe the bool has_SIOC should be has_SubPlugIn
+                self.has_SIOC = True
         return {
+            "availablePlugins": available_plugins,
+            "hasSIOC": self.has_SIOC,
             "PSUIOPoint": self._settings.get(["PSUIOPoint"]),
             "ESTIOPoint": self._settings.get(["ESTIOPoint"]),
             "EnableESTIOPoint": self._settings.get(["EnableESTIOPoint"]),
@@ -146,13 +158,13 @@ class SiocontrolPlugin(
 
     def reload_settings(self):
         for k, v in self.get_settings_defaults().items():
-            if type(v) == str:
+            if type(v) is str:
                 v = self._settings.get([k])
-            elif type(v) == int:
+            elif type(v) is int:
                 v = self._settings.get_int([k])
-            elif type(v) == float:
+            elif type(v) is float:
                 v = self._settings.get_float([k])
-            elif type(v) == bool:
+            elif type(v) is bool:
                 v = self._settings.get_boolean([k])
 
     def setStartUpIO(self):
@@ -389,35 +401,7 @@ class SiocontrolPlugin(
                 )
 
     def on_api_get(self, request):
-        states = []
-        for configuration in self._settings.get(["sio_configurations"]):
-            if configuration["pin"] is not None:
-                pin = int(configuration["pin"])
-
-                if self.IOCurrent is not None and pin < len(self.IOCurrent):
-                    if pin < 0:
-                        states.append("")
-                    elif configuration["active_mode"] == "active_in_low":
-                        pstate = "off" if self.IOCurrent[pin] == "1" else "on"
-                        states.append(pstate)
-                    elif configuration["active_mode"] == "active_in_high":
-                        pstate = "on" if self.IOCurrent[pin] == "1" else "off"
-                        states.append(pstate)
-                    elif configuration["active_mode"] == "active_out_low":
-                        pstate = "off" if self.IOCurrent[pin] == "1" else "on"
-                        states.append(pstate)
-                    elif configuration["active_mode"] == "active_out_high":
-                        pstate = "on" if self.IOCurrent[pin] == "1" else "off"
-                        states.append(pstate)
-                else:
-                    if self.conn is not None and self.conn.is_connected() is True:
-                        self._logger.info("Pin number assigned to IO control{} maybe out of range.".format(pin))
-
-                    states.append("off")
-            else:
-                states.append("off")
-
-        return flask.jsonify(states)
+        return flask.jsonify(self.get_sio_Configuration_status())
 
     def getCounts(self):
         if self.conn.IOCount != 0:
@@ -463,6 +447,31 @@ class SiocontrolPlugin(
 
         self.reload_settings()
 
+        return
+
+    def SetDIOPoint(self,pin,action):
+        #actions ["on","off"]
+        if pin != -1:
+            for configuration in self._settings.get(["sio_configurations"]):
+                cpin = int(configuration["pin"])
+                if pin == cpin:
+                    if configuration["active_mode"] == "active_out_low":
+                        if action == "on":
+                            self.conn.send(f"IO {pin} 0")
+                        elif action == "off":
+                            self.conn.send(f"IO {pin} 1")
+                        else:
+                            self._logger.info("Can't set Digital IO pin {} State to {}. Action is invalid".format(configuration["pin"],action))
+
+                    elif configuration["active_mode"] == "active_out_high":
+                        if action == "on":
+                            self.conn.send(f"IO {pin} 1")
+                        elif action == "off":
+                            self.conn.send(f"IO {pin} 0")
+                        else:
+                            self._logger.info("Can't set Digital IO pin {} State to {}. Action is invalid".format(configuration["pin"],action))
+        else:
+            self._logger.info("Can't set Digital IO pin {} State to {}. Pin number is out of range".format(configuration["pin"],action,))
         return
 
     def turn_psu_on(self):
@@ -515,12 +524,103 @@ class SiocontrolPlugin(
     ##~~ AssetPlugin mixin
 
     def get_assets(self):
-        self._logger.info("Running get_assets")
+        self._logger.debug("SIOC Running get_assets")
         return dict(
             css=["css/SIOControl.css", "css/fontawesome-iconpicker.min.css"],
             js=["js/siocontrol.js", "js/fontawesome-iconpicker.min.js"],
         )
 
+    ##~~ Sub Plugin Hooks
+    def _get_plugin_key(self, implementation):
+        for k, v in self._plugin_manager.plugin_implementations.items():
+            if v == implementation:
+                return k
+
+    def register_plugin(self, implementation):
+        k = self._get_plugin_key(implementation)
+
+        self._logger.debug("Registering plugin - {} as SIO Control Sub plugin".format(k))
+
+        if k not in self._sub_plugins:
+            self._logger.info("Registered plugin - {} as SIO Control Sub plugin".format(k))
+            self._sub_plugins[k] = implementation
+
+    def broadCastStateToSubPlugins(self):
+        #update all sub plugins with state array for digital IO points when the state changes.
+        if self.IOCurrent == self._lastIOCurent:
+            return
+
+        self._lastIOCurrent = self.IOCurrent
+        for k, v in self._sub_plugins.items():
+            if hasattr(v,'sioStateChanged'):
+                callback = self._sub_plugins[k].sioStateChanged
+                try:
+                    IOStatus = self.get_sio_digital_status()
+                    callback(self.IOCurrent,IOStatus)
+                except Exception:
+                    self._logger.exception("Error while executing sub Plugin callback method {}".format(callback),extra={"callback":fqfn(callback)},)
+                    #return  dont drop out.. this might be just one of many sub plugins looking for info.
+
+    def set_sio_digital_state(self,point,action):
+        #actions ["on,off"]
+        self.SetDIOPoint(point,action)
+        return self.IOCurrent
+
+    def get_sio_digital_state(self):
+        return self.IOCurrent
+
+    def get_sio_digital_status(self):
+        conStatus = self.get_sio_Configuration_status()
+        status = []
+
+        for _idx, _x in enumerate(self.IOCurrent):
+            status.append("na")
+        try:
+
+            for idx,configuration in enumerate(self._settings.get(["sio_configurations"])):
+                pin = int(configuration["pin"])
+                status[pin] = conStatus[idx]
+                self._logger.debug("Pin#{} set to \"{}\"".format(idx,status[pin]))
+
+        except Exception:
+            self._logger.exception("Error while getting digital status ConStatus{} IOCurrent{}".format(conStatus,self.IOCurrent))
+
+        return status
+
+    # Important to note that this is indexed in the order of the Configurations for the UI. Not in the pin IO Order.
+    # It will also only return items that corospond to the sio_configurations. So if you only configured 2 points, you will
+    # only get 2 items in the array.
+    # to get the status for the configured pins, use get_sio_digital_status
+    def get_sio_Configuration_status(self):
+        status = []
+        for configuration in self._settings.get(["sio_configurations"]):
+            if configuration["pin"] is not None:
+                pin = int(configuration["pin"])
+
+                if self.IOCurrent is not None and pin < len(self.IOCurrent):
+                    if pin < 0:
+                        status.append("")
+                    elif configuration["active_mode"] == "active_in_low":
+                        pstatus = "off" if self.IOCurrent[pin] == "1" else "on"
+                        status.append(pstatus)
+                    elif configuration["active_mode"] == "active_in_high":
+                        pstatus = "on" if self.IOCurrent[pin] == "1" else "off"
+                        status.append(pstatus)
+                    elif configuration["active_mode"] == "active_out_low":
+                        pstatus = "off" if self.IOCurrent[pin] == "1" else "on"
+                        status.append(pstatus)
+                    elif configuration["active_mode"] == "active_out_high":
+                        pstatus = "on" if self.IOCurrent[pin] == "1" else "off"
+                        status.append(pstatus)
+                else:
+                    if self.conn is not None and self.conn.is_connected() is True:
+                        self._logger.debug("Pin number assigned to IO control {} maybe out of range.".format(pin))
+
+                    status.append("off")
+            else:
+                status.append("off")
+
+        return status
     ##~~ Softwareupdate hook
 
     def get_update_information(self):
@@ -565,3 +665,11 @@ def __plugin_load__():
     __plugin_hooks__ = {
         "octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information
     }
+
+    global __plugin_helpers__
+    __plugin_helpers__ = dict(
+        set_sio_digital_state=__plugin_implementation__.set_sio_digital_state,
+        get_sio_digital_state=__plugin_implementation__.get_sio_digital_state,
+        register_plugin=__plugin_implementation__.register_plugin,
+
+    )
