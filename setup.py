@@ -5,8 +5,8 @@ from setuptools import setup
 plugin_identifier = "siocontrol"
 plugin_package = "octoprint_siocontrol"
 plugin_name = "SIO Control"
-plugin_version = "1.0.0"
-plugin_description = "Adds a sidebar with on/off buttons for controling a SerialIO module. Integrates with PSU Control. Includes faliment runout and Emergency Stop input capabilites."
+plugin_version = "1.0.1"
+plugin_description = "Serial IO Control. Integrates a micro controller to give native IO to your OctoPrint device"
 plugin_author = "jcassel"
 plugin_author_email = "jcassel@softwaresedge.com"
 plugin_url = "https://github.com/jcassel/OctoPrint-Siocontrol"
@@ -17,7 +17,6 @@ plugin_additional_packages = []
 plugin_ignored_packages = []
 additional_setup_parameters = {"python_requires": ">=3,<4"}
 ########################################################################################################################
-
 
 
 try:

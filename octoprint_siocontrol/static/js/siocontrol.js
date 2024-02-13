@@ -120,17 +120,15 @@ $(function () {
 
         self.onSettingsShown = function () {
             self.sioConfigurations(self.settingsViewModel.settings.plugins.siocontrol.sio_configurations.slice(0));
-            //self.sioScriptAlignments(self.settingsViewModel.settings.plugins.siocontrol.sio_ScriptAlignments.slice(0));
             self.updateIconPicker();
         };
 
         self.onSettingsHidden = function () {
             self.sioConfigurations(self.settingsViewModel.settings.plugins.siocontrol.sio_configurations.slice(0));
-            //self.updateSioButtons();
         };
 
         self.addSioConfiguration = function () {
-            self.sioConfigurations.push({ pin: 0, icon: "fas fa-plug", name: "", active_mode: "active_out_high", default_state: "default_off", on_nav: 0 });
+            self.sioConfigurations.push({ pin: 0, icon: "fas fa-plug", name: "", active_mode: "active_out_high", default_state: "default_off", on_nav: 0,on_side:0 });
             self.updateIconPicker();
         };
 
@@ -172,6 +170,7 @@ $(function () {
                         active_mode: item.active_mode,
                         pin: item.pin,
                         on_nav: item.on_nav,
+                        on_side: item.on_side,
                     }
                 }));
 
@@ -183,6 +182,7 @@ $(function () {
                         active_mode: item.active_mode,
                         pin: item.pin,
                         on_nav: item.on_nav,
+                        on_side: item.on_side,
                     });
 
                     //removeClass("off").addClass("on");    

@@ -1,9 +1,6 @@
 # coding=utf-8
 from __future__ import absolute_import, print_function
 
-import threading
-import time
-
 import flask
 
 import octoprint.plugin
@@ -12,6 +9,10 @@ from octoprint.util import fqfn
 
 from . import Connection
 
+#import sys
+#import threading
+#import time
+#import traceback
 # from time import sleep, time
 
 
@@ -58,7 +59,7 @@ class SiocontrolPlugin(
         available_plugins = []
         for k in list(self._sub_plugins.keys()):
             available_plugins.append(dict(pluginIdentifier=k, displayName=self._plugin_manager.plugins[k].name))
-            if k == "": # I think this should be != but leaving for now. also maybe the bool has_SIOC should be has_SubPlugIn
+            if k == "":  # I think this should be != but leaving for now. also maybe the bool has_SIOC should be has_SubPlugIn
                 self.has_SIOC = True
         return {
             "availablePlugins": available_plugins,
@@ -127,34 +128,33 @@ class SiocontrolPlugin(
         # do what is needed to make sure old settings will stay working on an update.
         upDatedConfigs = []
         # add Nav Attribute to IO configs
+
         for configuration in self._settings.get(["sio_configurations"]):
             try:
-                if configuration["on_nav"]:
-                    self._logger.debug(
-                        "Settings have({}) : on_nav, adding on_nav = false".format(
-                            configuration["name"]
-                        )
-                    )
-                    return
+                #needsnav  = 'on_nav' in configuration
 
+                if 'on_side' not in configuration:
+                    configuration['on_side'] = True  # defalt to show all on the side
+
+                if 'on_nav' not in configuration:
+                    configuration['on_nav'] = False
+
+                #"active_mode": configuration["active_mode"],
+                #"default_state": configuration["default_state"],
+                #"icon": configuration["icon"],
+                #"name": configuration["name"],
+                #"on_nav": False,
+                #"on_side": True,
+                #"pin": configuration["pin"],
+                upDatedConfigs.append(configuration)
             except Exception:
-                upDatedConfigs.append(
-                    {
-                        "active_mode": configuration["active_mode"],
-                        "default_state": configuration["default_state"],
-                        "icon": configuration["icon"],
-                        "name": configuration["name"],
-                        "on_nav": False,
-                        "pin": configuration["pin"],
-                    }
-                )
-
-                self._logger.info(
-                    "Settings missing({}) : on_nav, adding on_nav = false".format(
-                        configuration["name"]
-                    )
-                )
-                self._settings.set(["sio_configurations"], upDatedConfigs)
+                self._logger.exception(
+                    "Error Configuration update. Item {} caused an error while checking. You settins maybe lost or you may have to resave them to use new features.".format(
+                        configuration['name']
+                    ))
+                pass
+        # update the settings to have the new values into the future.
+        self._settings.set(["sio_configurations"], upDatedConfigs)
 
     def reload_settings(self):
         for k, v in self.get_settings_defaults().items():
@@ -195,12 +195,13 @@ class SiocontrolPlugin(
                         self.conn.send(f"IO {pin} 0")
 
             self._logger.info(
-                "Configured SIO{}: {},{} ({}){}".format(
+                "Configured SIO{}: {},{} ({}),{},{}".format(
                     configuration["pin"],
                     configuration["active_mode"],
                     configuration["default_state"],
                     configuration["name"],
                     configuration["on_nav"],
+                    configuration["on_side"],
                 )
             )
 
@@ -545,6 +546,22 @@ class SiocontrolPlugin(
             self._logger.info("Registered plugin - {} as SIO Control Sub plugin".format(k))
             self._sub_plugins[k] = implementation
 
+    # Send serial data recieved for use in subPlugins.
+    def serialRecievequeue(self,line):
+        for k, v in self._sub_plugins.items():
+            if hasattr(v,'hook_sio_serial_stream'):
+                callback = self._sub_plugins[k].hook_sio_serial_stream
+                try:
+                    callback(line)
+                except Exception:
+                    self._logger.exception("Error while executing sub Plugin callback method {}".format(callback),extra={"callback":fqfn(callback)},)
+
+        return line
+
+    # Can be used to send arbatrary command to the SIO Control module. Commands are entered into the send Queue.
+    def send_sio_command(self,command):
+        self.conn.send(command)
+
     def broadCastStateToSubPlugins(self):
         #update all sub plugins with state array for digital IO points when the state changes.
         if self.IOCurrent == self._lastIOCurent:
@@ -670,6 +687,7 @@ def __plugin_load__():
     __plugin_helpers__ = dict(
         set_sio_digital_state=__plugin_implementation__.set_sio_digital_state,
         get_sio_digital_state=__plugin_implementation__.get_sio_digital_state,
+        send_sio_command=__plugin_implementation__.send_sio_command,
         register_plugin=__plugin_implementation__.register_plugin,
 
     )

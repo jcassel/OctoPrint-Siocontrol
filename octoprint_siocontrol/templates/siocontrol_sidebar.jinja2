@@ -1,6 +1,6 @@
 
 <div class="row-fluid" data-bind="foreach: sioButtons">
-    <div class="siocontrol-button-row row-fluid">
+    <div class="siocontrol-button-row row-fluid" data-bind="visible: on_side ==1">
         <div class="siocontrol-button-label span7">
             <i data-bind="class: icon"></i>
             <span data-bind="text: name"></span>

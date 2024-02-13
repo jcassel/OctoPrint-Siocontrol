@@ -124,15 +124,20 @@
                 <div class="control-group span12">   
                     <h4>IO Configuration</h4>
                     <div class="row-fluid">
-                    Add a row below for each IO point you wish to monitor or control.  Each row represents a button or switch. To add an Icon button to the navigation bar, check column [Nav?].
+                    Add a row below for each IO point you wish to monitor or control.
+                    Each row represents a digital IO point.
+                    To add an Icon button to the navigation bar, check column [Nav].
+                    To include the control on the side Nav, check column [Side].
+                    </p>
                     </div>
                     <div class="row-fluid">
                         <div class="span2"><h4>Icon</h4></div>
                         <div class="span2"><h4>Label</h4></div>
                         <div class="span1"><h4>IO#</h4></div>
-                        <div class="span3"><h4>Active As</h4></div>
+                        <div class="span2"><h4>Active As</h4></div>
                         <div class="span2"><h4>Default To</h4></div>
-                        <div class="span1"><h4>Nav?</h4></div>
+                        <div class="span1"><h4>Nav</h4></div>
+                        <div class="span2"><h4>Side</h4></div>
                         <div class="span1"><h4></h4></div>
                     </div>
 
@@ -150,7 +155,7 @@
                             <div class="input-prepend span1">
                                 <input class="siocontrol_InNumber" type="number" data-bind="value: pin"/>
                             </div>
-                            <div class="input-prepend span3">
+                            <div class="input-prepend span2">
                                 <select class="btn-group span12" data-bind="value: active_mode">
                                     <option value="active_out_low">Out_LOW</option>
                                     <option value="active_out_high">Out_HIGH</option>
@@ -165,7 +170,10 @@
                                 </select>
                             </div>
                             <div class="input-prepend span1">
-                                <input type="checkbox" class="input-block-level" data-bind="checked: on_nav" /> 
+                                <input type="checkbox" class="input-block-level" data-bind="checked: on_nav" />
+                            </div>
+                            <div class="input-prepend span1">
+                                <input type="checkbox" class="input-block-level" data-bind="checked: on_side" />
                             </div>
                             <div class="span1">
                                 <a title="Remove SIO Configuration" class="btn btn-danger" data-bind="click: $parent.removeSioConfiguration">
