@@ -1,4 +1,4 @@
-import fnmatch
+# import fnmatch
 import glob
 import os
 import re
@@ -308,15 +308,20 @@ class Connection:
                             line = line.strip().decode()
                         except Exception:
                             pass
+                        # send line to down streem sub plugins before it is processed here. Note that sub PlugIns alter the line.
+                        # this is important because a subplugins must get the line for review. If adding something to the firmware / sub plugin, that will respond to
+                        # a subplugin, it should have a prefix with an "XT" as the lead 2 characters. If it does not have a known prefix, it will cause
+                        # the error recieved count to raise and might casue a disconnect.
+                        self.plugin.serialRecievequeue(line)
                         if line[:2] == "VI":
-                            self._logger.debug("IO Reported Version as:{}".format(line))
+                            self._logger.debug("IO Reported Version as: {}".format(line))
                             errorCount = 0
 
                         elif line[:2] == "CP":
-                            self._logger.debug("IO Reported Compatibility as:{}".format(line))
+                            self._logger.debug("IO Reported Compatibility as: {}".format(line))
                             if line[3:] != self.plugin.DeviceCompatibleVersion:
-                                self._logger.info("IO Reported Compatibility as:{}".format(line))
-                                self._logger.info("Required Compatibility is:{}".format(self.plugin.DeviceCompatibleVersion))
+                                self._logger.info("IO Reported Compatibility as: {}".format(line))
+                                self._logger.info("Required Compatibility is: {}".format(self.plugin.DeviceCompatibleVersion))
                                 self.disconnect()
                                 self._connected = False
                                 self._logger.error("IO Not compatible with this version of SIOPlugin")
@@ -325,7 +330,7 @@ class Connection:
                             errorCount = 0
 
                         elif line[:2] == "IO":
-                            self._logger.debug("IO Reported State as:{}".format(line))
+                            self._logger.debug("IO Reported State as: {}".format(line))
                             if (self.plugin.IOCurrent != line[3:]):  # only react to changes. Maybe future have a timeout somewhere for no reports
                                 self._logger.info("IO Reported State change as:{}".format(line))
                                 self.plugin.IOCurrent = line[3:]
@@ -336,7 +341,7 @@ class Connection:
                             errorCount = 0
 
                         elif line[:2] == "OK":
-                            self._logger.debug("IO Responded with:{}".format(line))
+                            self._logger.debug("IO Responded with Ack: {}".format(line))
                             errorCount = 0
 
                         elif line[:2] == "IC":  # explicit report IO count.
@@ -344,18 +349,22 @@ class Connection:
                             errorCount = 0
 
                         elif line[:2] == "RR":  # IO ready for commands
-                            self._logger.debug("IO claimed ready for commands:{}".format(line))
+                            self._logger.debug("IO claimed ready for commands: {}".format(line))
                             self.enableCommandQueue = True
                             errorCount = 0
 
                         elif line[:2] == "IT":  # IO type List
-                            self._logger.debug("IO Type list recieved:{}".format(line))
+                            self._logger.debug("IO Type list recieved: {}".format(line))
                             errorCount = 0
 
                         elif line[:2] == "DG":  # Debug Message
-                            self._logger.debug("IO sent debug message:{}".format(line))
+                            self._logger.debug("IO sent debug message: {}".format(line))
                             errorCount = 0
                         elif line[:2] == "FS":  # 4MB with spiffs(1.2MB APP/1.5 SPIFFS) This is expected firmware format
+                            self._logger.debug("IO Responded with Firmware information: {}".format(line))
+                            errorCount = 0
+                        elif line[:1] == "XT":  # this is an extended message set. Liklely from a custom change in the firmware or maybe to support a sub PlugIn
+                            self._logger.debug("IO Responded with Extened message response: {}".format(line))
                             errorCount = 0
                         else:
                             self._logger.debug("IO an unexpected data line: {}".format(line))  # error?
@@ -365,9 +374,7 @@ class Connection:
                                 self.IOCount = 0
                                 self.disconnect()
                                 self._connected = False
-                                self._logger.error(
-                                    "Too many Comm Errors disconnecting IO"
-                                )
+                                self._logger.error("Too many Comm Errors disconnecting IO")
                                 self.stopCommThreads()
                                 self.plugin.IOStatus = "COMM ERROR"
                 else:
@@ -375,7 +382,7 @@ class Connection:
             except serial.SerialException:
                 self.disconnect()
                 self._connected = False
-                self._logger.error("error reading from USB Comm threads stop called.")
+                self._logger.error("Error reading from USB Comm threads stop called.")
                 self.stopCommThreads()
 
         self._logger.debug("Read Thread: Thread stopped.")
@@ -438,12 +445,12 @@ class Connection:
                 )
 
         # blacklisted ports
-        blacklistedPorts = settings().get(["serial", "blacklistedPorts"])
-        if blacklistedPorts:
-            for pattern in settings().get(["serial", "blacklistedPorts"]):
-                candidates = list(
-                    filter(lambda x: not fnmatch.fnmatch(x, pattern), candidates)
-                )
+        #blacklistedPorts = settings().get(["serial", "blacklistedPorts"])
+        #if blacklistedPorts:
+        #    for pattern in settings().get(["serial", "blacklistedPorts"]):
+        #        candidates = list(
+        #            filter(lambda x: not fnmatch.fnmatch(x, pattern), candidates)
+        #        )
 
         # last used port = first to try, move to start
         prev = settings().get(["serial", "port"])
