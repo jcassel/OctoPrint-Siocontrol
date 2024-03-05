@@ -363,7 +363,7 @@ class Connection:
                         elif line[:2] == "FS":  # 4MB with spiffs(1.2MB APP/1.5 SPIFFS) This is expected firmware format
                             self._logger.debug("IO Responded with Firmware information: {}".format(line))
                             errorCount = 0
-                        elif line[:1] == "XT":  # this is an extended message set. Liklely from a custom change in the firmware or maybe to support a sub PlugIn
+                        elif line[:2] == "XT":  # this is an extended message set. Liklely from a custom change in the firmware or maybe to support a sub PlugIn
                             self._logger.debug("IO Responded with Extened message response: {}".format(line))
                             errorCount = 0
                         else:
