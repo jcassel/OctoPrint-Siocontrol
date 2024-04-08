@@ -95,7 +95,8 @@ class Connection:
                         self.plugin.IOSWarnings = ""
                     # no matter what the result is we are done here.
                     checkingCompatibility = False
-
+                elif line[:2] == "OK":
+                    self._logger.debug("IO Responded with Ack:{}".format(line))
                 elif (line[:2] == "IO" or line[:2] == "RR" or line[:2] == "IT"):
                     # ignore
                     self._logger.debug("Unexpected(valid) Comm during compatibility check:{}".format(line))
@@ -366,8 +367,11 @@ class Connection:
                         elif line[:2] == "XT":  # this is an extended message set. Liklely from a custom change in the firmware or maybe to support a sub PlugIn
                             self._logger.debug("IO Responded with Extened message response: {}".format(line))
                             errorCount = 0
+                        elif line[:2] == "TC":  # IO type descriptors
+                            self._logger.debug("IO Responded with IO Desciptors information: {}".format(line))
+                            errorCount = 0
                         else:
-                            self._logger.debug("IO an unexpected data line: {}".format(line))  # error?
+                            self._logger.debug("IO reported an unexpected data line: {}".format(line))  # error?
                             errorCount = errorCount + 1
                             if errorCount > self.iReadTimeoutCounterMax:
                                 self.plugin.IOCurrent = ""
