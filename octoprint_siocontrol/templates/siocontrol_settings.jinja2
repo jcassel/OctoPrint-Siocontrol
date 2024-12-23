@@ -3,11 +3,33 @@
 		<h3>SIO Control Settings</h3>
 		<ul class="nav nav-tabs" id="siocontrol_tabs">
 			<li><a data-toggle="tab" href="#siocontrol_Connection">Connection</a></li>
-			<li class="active"><a data-toggle="tab" href="#siocontrol_Integrations">Integrations</a></li>
-            <li><a data-toggle="tab" href="#siocontrol_IO_Configuration">IO Configuration</a></li>
-            <!--<li><a data-toggle="tab" href="#siocontrol_IO_Action_Scripts">Action Scripts</a></li>-->
+			<li><a data-toggle="tab" href="#siocontrol_Integrations">Integrations</a></li>
+            <li class="active"><a data-toggle="tab" href="#siocontrol_IO_Configuration">IO Configuration</a></li>
+            <li><a data-toggle="tab" href="#siocontrol_IO_Configuration_Help">Help</a></li>
 		</ul>
 		<div class="tab-content">
+            <div id="siocontrol_IO_Configuration_Help" class="tab-pane">
+                <div class="span12 " >
+                    <h4>Configuration Help</h4>
+                </div>
+                <div class="span12 " >
+                    <p>Select the area you want to get help on.</p>
+                    <a href="#Connection" data-toggle="collapse" class="btn btn-info">Connection</a>
+                    <div id="Connection" class="collapse">
+                        <p>Connection settings are required to connect to the IO device.  Select the comm port and baud rate that the device is connected to.  The IO report interval is the time in milliseconds that the device will report the state of the IO points.</p>
+                    </div>
+                    <a href="#Integrations" data-toggle="collapse" class="btn btn-info">Integrations</a>
+                    <div id="Integrations" class="collapse">
+                        <p>Integrations allow you to connect IO points to other functions in OctoPrint.  For example, you can connect an IO point to the PSU control to turn the printer on and off.  You can also connect an IO point to the EStop to stop the printer in case of an emergency.</p>
+                    </div>
+                    <a href="#IO_Configuration" data-toggle="collapse" class="btn btn-info">IO Configuration</a>
+                    <div id="IO_Configuration" class="collapse">
+                        <p>Each row represents a digital IO point.  To add an Icon button to the navigation bar, check column [Nav].  To include the control on the side Nav, check column [Side].</p>
+                    </div>
+                           
+                </div>
+            </div>
+
             <div id="siocontrol_Connection" class="tab-pane">
                 <div class="span12 ">
                     <h4>IO Connection Settings</h4>
@@ -59,7 +81,7 @@
                 </div>
                 
             </div>
-            <div id="siocontrol_Integrations" class="tab-pane active">
+            <div id="siocontrol_Integrations" class="tab-pane ">
                 <div id="siocontrol_Connection" class="tab-pane  ">
                     <div class="row-fluid ">
                         <h4>Integrations</h4> 
@@ -120,10 +142,10 @@
                     </div>  
                 </div>
             </div>
-            <div id="siocontrol_IO_Configuration" class="tab-pane">
+            <div id="siocontrol_IO_Configuration" class="tab-pane active">
                 <div class="control-group span12">   
-                    <h4>IO Configuration</h4>
-                    <div class="row-fluid">
+                    <h4>IO Configuration</h4><p>SIO Firmware compatibilty: <span data-bind="text: SIOReportedCompatibleVersion"></span></p>
+                    <div class="row-fluid">                    
                     Add a row below for each IO point you wish to monitor or control.
                     Each row represents a digital IO point.
                     To add an Icon button to the navigation bar, check column [Nav].
@@ -161,6 +183,14 @@
                                     <option value="active_out_high">Out_HIGH</option>
                                     <option value="active_in_high">In_HIGH</option>
                                     <option value="active_in_low">In_LOW</option>
+                                    
+                                    <option data-bind="visible: $parent.SIOReportedCompatibleVersion() != 'SIOPlugin 0.1.1'" value="in_ds18b20">In_DS18B20(temp)</option>
+
+                                    <option data-bind="visible: $parent.SIOReportedCompatibleVersion() != 'SIOPlugin 0.1.1'" value="in_dht_t">In_DHT(temp)</option>
+                                    <option data-bind="visible: $parent.SIOReportedCompatibleVersion() != 'SIOPlugin 0.1.1'" value="in_dht_h">In_DHT(hum)</option>
+                                    
+                                    
+                                    
                                 </select>
                             </div>
                             <div class="input-prepend span2">
@@ -181,6 +211,40 @@
                                 </a>
                             </div>
                         </div>
+                        <div class="row-fluid siocontrol-settings-row" data-bind="visible: $parent.isDS18B20(active_mode)" >
+                            <h4>DS18B20 Calibration:</h4>
+                            <div class="row-fluid">
+                                <div class="span4"></div>
+                                <div class="span1">Offset</div>
+                                <div class="span5"></div>
+                            </div>
+                            <div class="row-fluid">
+                                <div class="span4"></div>
+                                <div class="span1"><input class="siocontrol_InNumber" type="number" data-bind="value: offset" /></div>
+                                <div class="span5"></div>
+                            </div>
+                        </div>
+                        <div class="row-fluid siocontrol-settings-row" data-bind="visible: $parent.isDHT(active_mode)" >
+                            <h4>DHT Calibration:</h4>
+                            <div class="row-fluid">
+                                <div class="span4"></div>
+                                <div class="span1">Test Min</div>
+                                <div class="span1">Test Max</div>
+                                <div class="span1">Cali Min</div>
+                                <div class="span1">Cali Max</div>
+                                <div class="span1">Offset</div>
+                                <div class="span5"></div>
+                            </div>
+                            <div class="row-fluid">
+                                <div class="span4"></div>
+                                <div class="span1"><input class="siocontrol_InNumber" type="number" data-bind="value: inmin" /></div>
+                                <div class="span1"><input class="siocontrol_InNumber" type="number" data-bind="value: inmax" /></div>
+                                <div class="span1"><input class="siocontrol_InNumber" type="number" data-bind="value: outmin" /></div>
+                                <div class="span1"><input class="siocontrol_InNumber" type="number" data-bind="value: outmax" /></div>
+                                <div class="span1"><input class="siocontrol_InNumber" type="number" data-bind="value: offset" /></div>
+                                <div class="span5"></div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="row-fluid" >
@@ -190,46 +254,6 @@
                     </div>
                 </div>
             </div>
-            <!--
-            <div id="siocontrol_IO_Action_Scripts" class="tab-pane">
-                <h4>IO Configuration</h4>
-                <div class="row-fluid">
-                <p>Add a row below for each IO point you wish to connect to a Script. Enable or Disable, Select the trigger and script Name. Create a new script to assignd to an IO trigger.</p> 
-                </div>
-                <div class="row-fluid">
-                    <div class="span2">Existing Script</div>
-                    <div class="span2">
-                        <select class="siocontrol_scriptList" data-bind="value: SIO_SI">
-                            <option value="" disabled selected>select...</option>
-                            {%for item in plugin_siocontrol_IOSIs %}
-                            <option value="{{ item }}">{{ item }}</option>
-                            {% endfor %} 
-                        </select>
-                    </div>
-                    <div class="span1"><a title="Edit SIO Action Script" class="btn btn-primary" data-bind="click: addSioConfiguration"><i class="icon-edit"></i></a></div>
-                    <div class="span2"><a title="Delete selected SIO Action Script" class="btn btn-danger" data-bind="click: addSioConfiguration"><i class="icon-trash"></i></a></div>
-                    <div class="span1"><a title="Add SIO Action Script" class="btn btn-primary" data-bind="click: addSioConfiguration"><i class="icon-plus"></i></a></div>
-                </div>
-                <div class="row-fluid">
-                    <div class="span2">Script Name</div>
-                    <div class="span2">
-                        <input type="text"/>
-                    </div>
-                </div>
-                <div class="row-fluid">
-                    <div class="span2">Script</div>
-                    <div class="span10">
-                        <textarea row="8" class="block monospace"></textarea>
-                    </div>
-                </div>
-                <div class="row-fluid">
-                    <div class="span1"><h4>Enable</h4></div>
-                    <div class="span2"><h4>IO#</h4></div>
-                    <div class="span3"><h4>Action On</h4></div>
-                    <div class="span3"><h4>Script</h4></div>
-                </div>
-            </div>
-            -->
         </div>    
     </div>    
 </div>

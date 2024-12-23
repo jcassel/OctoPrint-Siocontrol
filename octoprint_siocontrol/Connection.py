@@ -79,9 +79,10 @@ class Connection:
 
                 elif line[:2] == "CP":
                     self._logger.debug("IO Reported Compatibility as:{}".format(line))
-                    if line[3:] != self.plugin.DeviceCompatibleVersion:
+                    self.plugin.ReportedCompatibleVersion = line[3:]
+                    if self.plugin.ReportedCompatibleVersion not in self.plugin.DeviceCompatibleVersions:
                         self._logger.info("IO Reported Compatibility as:{}".format(line))
-                        self._logger.info("Required Compatibility is:{}".format(self.plugin.DeviceCompatibleVersion))
+                        self._logger.info("Required Compatibility is:{}".format(self.plugin.DeviceCompatibleVersions))
                         self.disconnect()
                         self._connected = False
                         self._logger.error("IO Not compatible with this version of SIOPlugin")
@@ -187,10 +188,10 @@ class Connection:
             self.commandQueue = []
             self._logger.debug("cleared Command queue")
             self._logger.debug("Connection failed!")
-            self._logger.exception("Serial Exception: {}, {}".format(err,type(err)))
+            self._logger.exception("Serial Exception: {}, {}".format(err, type(err)))
 
         except Exception as err:
-            self._logger.exception("Unexpected {}, {}".format(err,type(err)))
+            self._logger.exception("Unexpected {}, {}".format(err, type(err)))
 
     def Update_IOSI(self, value):
         self.send("SI " + value)
@@ -310,9 +311,9 @@ class Connection:
                         except Exception:
                             pass
                         # send line to down streem sub plugins before it is processed here. Note that sub PlugIns alter the line.
-                        # this is important because a subplugins must get the line for review. If adding something to the firmware / sub plugin, that will respond to
-                        # a subplugin, it should have a prefix with an "XT" as the lead 2 characters. If it does not have a known prefix, it will cause
-                        # the error recieved count to raise and might casue a disconnect.
+                        # this is important because a subplugins must get the line for review. If adding something to the firmware / sub plugin,
+                        # that will respond to a subplugin, it should have a prefix with an "XT" as the lead 2 characters. If it does not have
+                        # a known prefix, it will cause the error recieved count to raise and might casue a disconnect.
                         self.plugin.serialRecievequeue(line)
                         if line[:2] == "VI":
                             self._logger.debug("IO Reported Version as: {}".format(line))
@@ -320,7 +321,8 @@ class Connection:
 
                         elif line[:2] == "CP":
                             self._logger.debug("IO Reported Compatibility as: {}".format(line))
-                            if line[3:] != self.plugin.DeviceCompatibleVersion:
+                            self.plugin.ReportedCompatibleVersion = line[3:]
+                            if self.plugin.ReportedCompatibleVersion not in self.plugin.DeviceCompatibleVersions:
                                 self._logger.info("IO Reported Compatibility as: {}".format(line))
                                 self._logger.info("Required Compatibility is: {}".format(self.plugin.DeviceCompatibleVersion))
                                 self.disconnect()
@@ -365,6 +367,7 @@ class Connection:
                             self._logger.debug("IO Responded with Firmware information: {}".format(line))
                             errorCount = 0
                         elif line[:2] == "XT":  # this is an extended message set. Liklely from a custom change in the firmware or maybe to support a sub PlugIn
+                            self.plugin.routeXTMessage(line)
                             self._logger.debug("IO Responded with Extened message response: {}".format(line))
                             errorCount = 0
                         elif line[:2] == "TC":  # IO type descriptors
@@ -409,9 +412,9 @@ class Connection:
             except Exception as err:
                 # [22] happens on windows machines. This is normal.
                 if err.errno == 22:
-                    self._logger.debug("Unexpected(windows OK) {}, {}".format(err,type(err)))
+                    self._logger.debug("Unexpected(windows OK) {}, {}".format(err, type(err)))
                 else:
-                    self._logger.exception("Unexpected {}, {}".format(err,type(err)))
+                    self._logger.exception("Unexpected {}, {}".format(err, type(err)))
 
                 pass
         else:
@@ -449,8 +452,8 @@ class Connection:
                 )
 
         # blacklisted ports
-        #blacklistedPorts = settings().get(["serial", "blacklistedPorts"])
-        #if blacklistedPorts:
+        # blacklistedPorts = settings().get(["serial", "blacklistedPorts"])
+        # if blacklistedPorts:
         #    for pattern in settings().get(["serial", "blacklistedPorts"]):
         #        candidates = list(
         #            filter(lambda x: not fnmatch.fnmatch(x, pattern), candidates)

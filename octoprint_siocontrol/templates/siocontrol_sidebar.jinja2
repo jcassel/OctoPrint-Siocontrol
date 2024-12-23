@@ -1,8 +1,8 @@
 
 <div class="row-fluid" data-bind="foreach: sioButtons">
     <div class="siocontrol-button-row row-fluid" data-bind="visible: on_side ==1">
-        <div class="siocontrol-button-label span7">
-            <i data-bind="class: icon"></i>
+        <div class="siocontrol-button-label span7 " data-bind="css:{'siocontrol_btOn':current_state =='on','siocontrol_btOff': current_state == 'off'}">
+            <i data-bind="class: icon "></i>
             <span data-bind="text: name"></span>
         </div>
         <div class="siocontrol-button-controls input-prepend input-append span5" data-bind="visible: $parent.hasControlPermission() && (active_mode =='active_out_low' || active_mode =='active_out_high')" >
@@ -14,9 +14,13 @@
             <div class="btn span5 siofntblk" data-bind="visible: current_state =='off'"><i class="fas fa-toggle-off"></i></div>
         </div>        
 
-        <div class="siocontrol-button-controls input-prepend input-append span5" data-bind="visible: !$parent.hasControlPermission()" >
+        <div class="siocontrol-button-controls input-prepend input-append span5" data-bind="visible: !$parent.hasControlPermission() && active_mode !='in_dht'" >
             <div class="btn span5 siofntGrn" data-bind="visible: current_state =='on'"><i class="fas fa-toggle-on"></i></div>
             <div class="btn span5 siofntblk" data-bind="visible: current_state =='off'"><i class="fas fa-toggle-off"></i></div>
+        </div>         
+
+        <div class="siocontrol-button-label span5" data-bind="visible: active_mode.startsWith('in_dht') || active_mode == 'in_ds18b20'" >
+            <span data-bind="text: current_state"></span>
         </div>         
     </div>
 </div>

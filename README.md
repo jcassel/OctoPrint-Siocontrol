@@ -1,4 +1,28 @@
 # OctoPrint-SIOControl
+
+Add IO to your OctoPrint instance. Automate and control anything you want. Add Digital IO support to any PC(Linux,Windows) running OctoPrint. Any PC hardware, not just the Raspberry Pi usine a secondary MCU like the ESP32, Arduino Uno or even an Arduino Nanno.  
+
+This plugin can be used to control all aspects of your printer enclosuer. It can be used to do manything like:
+
+* Power control for your printer, either directly or using integration with the PSU Control Plugin.
+* Add temperature sensor to your encolsure
+* Control the tempreature of your enclosure 
+* Send custom Gcode to you printer
+* Create event based reactions for switches and sensors
+* Add Mechanical buttons to cotrol your printer (Pause, Reasume, Cancel, Emergency Stop) 
+* Add Mechanical buttons to control relays
+* Add Mechanical buttons to send gcode to your printer
+* Add 1 or more Filament sensors 
+* Add alarms and alerts based on IO events like temperatures.
+* Add UI buttons and display sensor values in a side bar.
+* Add UI buttons and display sensor values in the top navigation bar.
+* Schedule control of IO.
+* Control IO based on gcode in your print.
+* 
+
+If you dont know how to do the wiring you can purchase a kit on Tindie and follow the detailed instructions get support directly from the developer. 
+
+
 The Serial IO Control OctoPrint plugin, Adds a sidebar with on/off buttons for controlling of Outputs and monitoring of Inputs. It is also a SubPlugin for integration with PSU control, incorporates a physical EStop and simple Filament runout sensor. Serves as an alterative IO control for users that are not using a Raspberry Pi or other device that can take advantage local IO. Requires a Microcontroller as the IO.
 
 ![sidebar view](Assets/img/SideBarExample.PNG)
@@ -10,6 +34,10 @@ Esp8266/ESP32, Arduino Mega, Nano or some other MCU capable of Serial communicat
 Use the micro controllers Digital IO from within the Octoprint interface. An alternative to using GPIO/local IO on a Raspberry Pi like device. Great for Windows users as well as users of other linux devices that do not have native IO like the Raspberry Pi. 
 
 Some hardware suggestions are listed at the end of this document.
+
+
+
+
 
 ## Setup
 

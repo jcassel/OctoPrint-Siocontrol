@@ -9,10 +9,10 @@ from octoprint.util import fqfn
 
 from . import Connection
 
-#import sys
-#import threading
-#import time
-#import traceback
+# import sys
+# import threading
+# import time
+# import traceback
 # from time import sleep, time
 
 
@@ -27,13 +27,19 @@ class SiocontrolPlugin(
     def __init__(self):
         self.config = dict()
         self._sub_plugins = dict()
-        self.DeviceCompatibleVersion = "SIOPlugin 0.1.1"
+        self.DeviceCompatibleVersions = ["SIOPlugin 0.1.1", "SIOPlugin 0.1.2"]
+        self.ReportedCompatibleVersion = "--"
         self.IOCurrent = None
+        self.dhtCurrent = []
+        self.ds18b20Current = []
         self._lastIOCurent = None
         self.IOStatus = "Ready"
         self.IOSWarnings = ""
         self.conn = None  # Connection.Connection(self)
         return
+    
+    def get_ReportedCompatibleVersion(self):
+        return self.ReportedCompatibleVersion
 
     def get_template_vars(self):
         avalIOSI = [
@@ -80,6 +86,7 @@ class SiocontrolPlugin(
             "sio_configurations": self._settings.get(["sio_configurations"]),
             "IOStatusMessage": self.IOStatus,
             "IOSWarnings": self.IOSWarnings,
+            "ReportedCompatibleVersion": self.ReportedCompatibleVersion,
         }
 
     def get_template_configs(self):
@@ -131,7 +138,7 @@ class SiocontrolPlugin(
 
         for configuration in self._settings.get(["sio_configurations"]):
             try:
-                #needsnav  = 'on_nav' in configuration
+                # needsnav  = 'on_nav' in configuration
 
                 if 'on_side' not in configuration:
                     configuration['on_side'] = True  # defalt to show all on the side
@@ -139,17 +146,26 @@ class SiocontrolPlugin(
                 if 'on_nav' not in configuration:
                     configuration['on_nav'] = False
 
-                #"active_mode": configuration["active_mode"],
-                #"default_state": configuration["default_state"],
-                #"icon": configuration["icon"],
-                #"name": configuration["name"],
-                #"on_nav": False,
-                #"on_side": True,
-                #"pin": configuration["pin"],
+                if 'inmin' not in configuration:
+                    configuration['inmin'] = 0
+
+                if 'inmax' not in configuration:
+                    configuration['inmax'] = 100
+
+                if 'outmin' not in configuration:
+                    configuration['outmin'] = 0
+
+                if 'outmax' not in configuration:
+                    configuration['outmax'] = 100
+
+                if 'offset' not in configuration:
+                    configuration['offset'] = 0
+
                 upDatedConfigs.append(configuration)
             except Exception:
                 self._logger.exception(
-                    "Error Configuration update. Item {} caused an error while checking. You settins maybe lost or you may have to resave them to use new features.".format(
+                    "Error Configuration update. Item {} caused an error checking. Your settings maybe lost or you may have to resave them to use new features."
+                    .format(
                         configuration['name']
                     ))
                 pass
@@ -269,26 +285,16 @@ class SiocontrolPlugin(
             getIOCounts="",
             getStatusMessage="",
             connectIO=["port", "baudRate", "si"],
+            getReportedCompatibleVersion="",
         )
 
     def on_api_command(self, command, data):
 
+        if command == "getReportedCompatibleVersion":
+            return flask.jsonify(self.get_ReportedCompatibleVersion())  # return the reported compatible version of the SIO firmware.
+
         if command == "connectIO":
-            self._settings.set(["IOSI"], data["si"])
-            self._settings.set(["IOBaudRate"], data["baudRate"])
-            self._settings.set(["IOPort"], data["port"])
-
-            if self.conn.is_connected():
-                self.conn.stopCommThreads()
-                self.conn.disconnect()
-
-            self.conn.connect()
-            if self.conn.is_connected():
-                self._logger.info("Connected")
-                self.conn.send("SI " + self._settings.get(["IOSI"]))
-            else:
-                self._logger.error("Could not connect to SIO.")
-
+            self.forceConnect(data)
             return flask.jsonify(self.IOStatus)
 
         if command == "getStatusMessage":
@@ -327,7 +333,7 @@ class SiocontrolPlugin(
             configuration = self._settings.get(["sio_configurations"])[int(data["id"])]
             pin = int(configuration["pin"])
 
-            if pin < len(self.IOCurrent):
+            if self.IOCurrent is not None and pin < len(self.IOCurrent):
                 if command == "getSioState":
                     if pin <= 0:
                         return flask.jsonify("")
@@ -450,8 +456,8 @@ class SiocontrolPlugin(
 
         return
 
-    def SetDIOPoint(self,pin,action):
-        #actions ["on","off"]
+    def SetDIOPoint(self, pin, action):
+        # actions ["on","off"]
         if pin != -1:
             for configuration in self._settings.get(["sio_configurations"]):
                 cpin = int(configuration["pin"])
@@ -462,7 +468,7 @@ class SiocontrolPlugin(
                         elif action == "off":
                             self.conn.send(f"IO {pin} 1")
                         else:
-                            self._logger.info("Can't set Digital IO pin {} State to {}. Action is invalid".format(configuration["pin"],action))
+                            self._logger.info("Can't set Digital IO pin {} State to {}. Action is invalid".format(configuration["pin"], action))
 
                     elif configuration["active_mode"] == "active_out_high":
                         if action == "on":
@@ -470,9 +476,9 @@ class SiocontrolPlugin(
                         elif action == "off":
                             self.conn.send(f"IO {pin} 0")
                         else:
-                            self._logger.info("Can't set Digital IO pin {} State to {}. Action is invalid".format(configuration["pin"],action))
+                            self._logger.info("Can't set Digital IO pin {} State to {}. Action is invalid".format(configuration["pin"], action))
         else:
-            self._logger.info("Can't set Digital IO pin {} State to {}. Pin number is out of range".format(configuration["pin"],action,))
+            self._logger.info("Can't set Digital IO pin {} State to {}. Pin number is out of range".format(configuration["pin"], action,))
         return
 
     def turn_psu_on(self):
@@ -522,7 +528,7 @@ class SiocontrolPlugin(
                 "Cant get PSU State due to lack of reporting from SIO Control"
             )
 
-    ##~~ AssetPlugin mixin
+    # ##~~ AssetPlugin mixin
 
     def get_assets(self):
         self._logger.debug("SIOC Running get_assets")
@@ -531,7 +537,7 @@ class SiocontrolPlugin(
             js=["js/siocontrol.js", "js/fontawesome-iconpicker.min.js"],
         )
 
-    ##~~ Sub Plugin Hooks
+    # ##~~ Sub Plugin Hooks
     def _get_plugin_key(self, implementation):
         for k, v in self._plugin_manager.plugin_implementations.items():
             if v == implementation:
@@ -547,67 +553,234 @@ class SiocontrolPlugin(
             self._sub_plugins[k] = implementation
 
     # Send serial data recieved for use in subPlugins.
-    def serialRecievequeue(self,line):
+    def serialRecievequeue(self, line):
         for k, v in self._sub_plugins.items():
-            if hasattr(v,'hook_sio_serial_stream'):
+            if hasattr(v, 'hook_sio_serial_stream'):
                 callback = self._sub_plugins[k].hook_sio_serial_stream
                 try:
                     callback(line)
                 except Exception:
-                    self._logger.exception("Error while executing sub Plugin callback method {}".format(callback),extra={"callback":fqfn(callback)},)
+                    self._logger.exception("Error while executing sub Plugin callback method {}".format(callback), extra={"callback": fqfn(callback)},)
 
         return line
 
+    # used to force a reconnect to the SIO Control module. This is useful if the connection is lost and needs to be re-established.
+    def forceReconnect(self):
+        if self.conn.is_connected():
+            self.conn.stopCommThreads()
+            self.conn.disconnect()
+
+        self.conn.connect()
+        if self.conn.is_connected():
+            self._logger.info("Connected")
+            self.conn.send("SI " + self._settings.get(["IOSI"]))
+        else:
+            self._logger.error("Could not connect to SIO.")
+
+    def forceConnect(self, data):
+        self._settings.set(["IOSI"], data["si"])
+        self._settings.set(["IOBaudRate"], data["baudRate"])
+        self._settings.set(["IOPort"], data["port"])
+        return self.forceReconnect()
+
     # Can be used to send arbatrary command to the SIO Control module. Commands are entered into the send Queue.
-    def send_sio_command(self,command):
+    def send_sio_command(self, command):
         self.conn.send(command)
 
     def broadCastStateToSubPlugins(self):
-        #update all sub plugins with state array for digital IO points when the state changes.
+        # update all sub plugins with state array for digital IO points when the state changes.
         if self.IOCurrent == self._lastIOCurent:
             return
 
         self._lastIOCurrent = self.IOCurrent
         for k, v in self._sub_plugins.items():
-            if hasattr(v,'sioStateChanged'):
+            if hasattr(v, 'sioStateChanged'):
                 callback = self._sub_plugins[k].sioStateChanged
                 try:
                     IOStatus = self.get_sio_digital_status()
-                    callback(self.IOCurrent,IOStatus)
+                    callback(self.IOCurrent, IOStatus)
                 except Exception:
-                    self._logger.exception("Error while executing sub Plugin callback method {}".format(callback),extra={"callback":fqfn(callback)},)
-                    #return  dont drop out.. this might be just one of many sub plugins looking for info.
+                    self._logger.exception("Error while executing sub Plugin callback method {}".format(callback), extra={"callback": fqfn(callback)},)
+                    # return  dont drop out.. this might be just one of many sub plugins looking for info.
 
-    def set_sio_digital_state(self,point,action):
-        #actions ["on,off"]
-        self.SetDIOPoint(point,action)
+    def set_sio_digital_state(self, point, action):
+        # actions ["on,off"]
+        self.SetDIOPoint(point, action)
         return self.IOCurrent
 
     def get_sio_digital_state(self):
         return self.IOCurrent
 
     def get_sio_digital_status(self):
-        conStatus = self.get_sio_Configuration_status()
+        configStatus = self.get_sio_Configuration_status()
         status = []
 
         for _idx, _x in enumerate(self.IOCurrent):
             status.append("na")
         try:
 
-            for idx,configuration in enumerate(self._settings.get(["sio_configurations"])):
+            for idx, configuration in enumerate(self._settings.get(["sio_configurations"])):
                 pin = int(configuration["pin"])
-                status[pin] = conStatus[idx]
-                self._logger.debug("Pin#{} set to \"{}\"".format(idx,status[pin]))
+                if configuration["active_mode"] == "in_dht_t" or configuration["active_mode"] == "in_dht_h":
+                    continue  # skip DHT pins leave as na for digital status.
+                else:
+                    status[pin] = configStatus[idx]
 
-        except Exception:
-            self._logger.exception("Error while getting digital status ConStatus{} IOCurrent{}".format(conStatus,self.IOCurrent))
+                self._logger.debug("Pin#{} set to \"{}\"".format(idx, status[pin]))
+
+        except Exception as err:
+            self._logger.debug("Unexpected {}, {}".format(err, type(err)))
+
+            self._logger.info(
+                "Configuration warning: There was an error While getting digital status ConStatus{} IOCurrent: {} {}"
+                .format(configStatus, self.IOCurrent,
+                        "\n This warning occures when you have IO pin numbers in your configuration that do not exist in the controller. \
+                        Check your configuration."))
 
         return status
+
+    # This is the method that is called when a message is recieved from the SIO Control module with a Tag of XT
+    def routeXTMessage(self, line):
+        # The line variable is the message that was recieved from the SIO Control module.
+        if line.startswith("XT DHT"):
+            self._logger.debug("DHT Message Recieved: {}".format(line))
+            # format for dht data is "XT DHT # # 99.00 10%" where the fist # is the DHT ID and the second # is the pin number.
+            # the 99.00 is the temperature and the 10% is the humidity.
+            try:
+                dhtid = int(line.split(" ")[2])
+                ioPinId = int(line.split(" ")[3])
+                temp = line.split(" ")[4]
+                hum = line.split(" ")[5]
+                rangeTemp = 0  # default values for range mapping temperature
+                rangeHum = 0  # default values for range mapping Hummidity
+                configTemp = self.getConfigurationByPinAndActiveMode(ioPinId, "in_dht_t")
+                configHum = self.getConfigurationByPinAndActiveMode(ioPinId, "in_dht_h")
+                if configTemp is not None or configHum is not None:
+                    if len(self.dhtCurrent) > 0 and self.dhtCurrent[dhtid] is not None:
+
+                        if configTemp is not None:
+                            rangeTemp = self.rangeMap(float(temp), float(configTemp["inmin"]), float(configTemp["inmax"]),
+                                                      float(configTemp["outmin"]), float(configTemp["outmax"]))
+                            temp = str(rangeTemp).format(".2f")
+
+                            temp = str(float(temp) + float(configTemp["offset"])).format(".2f")
+
+                        if configHum is not None:
+                            rangeHum = self.rangeMap(float(hum), float(configHum["inmin"]), float(configHum["inmax"]),
+                                                     float(configHum["outmin"]), float(configHum["outmax"]))
+                            hum = str(rangeHum).format(".2f")  
+
+                            hum = str(float(hum) + float(configHum["offset"])).format(".2f")
+
+                        self.dhtCurrent[dhtid] = {"dhtId": dhtid, "IoPinId": ioPinId, "temp": float(temp), "hum": float(hum),
+                                                  "configTemp": configTemp, "configHum": configHum}
+
+                        self._logger.debug("DHT{}: Temp: {} Hum: {}".format(dhtid, temp, hum))
+                        self._logger.debug("Range DHT{}: Temp: {} Hum: {}".format(dhtid, rangeTemp, rangeHum))
+                    else:
+                        self._logger.debug("DHT{}: Not found in DHT Array".format(dhtid))
+                        self.dhtCurrent.append({"dhtId": dhtid,
+                                                "IoPinId": ioPinId,
+                                                "temp": float(temp),
+                                                "hum": float(hum),
+                                                "configTemp": configTemp,
+                                                "configHum": configHum})
+            except Exception as err:
+                self._logger.exception("Error while processing DHT data: {}\n{}".format(err, line))
+                self._logger.info("This might be due to restart and the SIO Control module transmission of DHT data being out of sync.")
+
+        elif line.startswith("XT DS18B20"):
+            self._logger.debug("DS18B20 Message Recieved: {}".format(line))
+            # format for DS18B20 data is "XT DS18B20 # # 99.00" where the fist # is the DS18B20 Sensor index and the second # is the oneWire pin number.
+            # the 99.00 is the temperature.
+            try:
+                ds18b20id = int(line.split(" ")[2])
+                ioPinId = int(line.split(" ")[3])
+                temp = line.split(" ")[4]
+                rangeTemp = 0  # default values for range mapping temperature
+                configTemp = self.getConfigurationByPinAndActiveMode(ioPinId, "in_ds18b20")
+                if configTemp is not None:
+                    if len(self.ds18b20Current) > 0 and self.ds18b20Current[ds18b20id] is not None:
+                        # rangeTemp = self.rangeMap(float(temp), float(configTemp["inmin"]), float(configTemp["inmax"]),
+                                                  # float(configTemp["outmin"]), float(configTemp["outmax"]))
+                        # temp = str(rangeTemp).format(".2f")
+
+                        temp = str(float(temp) + float(configTemp["offset"])).format(".2f")
+
+                        self.ds18b20Current[ds18b20id] = {"dhtId": ds18b20id, "IoPinId": ioPinId, "temp": float(temp),
+                                                          "configTemp": configTemp, "configHum": None}
+
+                        self._logger.debug("DS18B20{}: Temp: {}".format(ds18b20id, temp))
+                        self._logger.debug("Range DS18B20{}: Temp: {}".format(ds18b20id, rangeTemp))
+                    else:
+                        self._logger.debug("DS18B20{}: Not found in DS18B20 Array".format(ds18b20id))
+                        self.ds18b20Current.append({"ds18b20Id": ds18b20id, "IoPinId": ioPinId,
+                                                    "temp": float(temp), "configTemp": configTemp})
+            except Exception as err:
+                self._logger.exception("Error while processing DS18B20 data: {}\n{}".format(err, line))
+                self._logger.info("This might be due to restart and the SIO Control module transmission of DS18B20 data being out of sync.")
+        else:
+            self._logger.debug("XT Message Recieved in routeXTMessage: {}".format(line))
+
+        return
+
+    def getDHTData(self, pin):
+        try:
+            for dht in self.dhtCurrent:
+                if dht["IoPinId"] == pin:
+                    return dht
+        except Exception:
+            self._logger.exception("Error while getting DHT Data for Pin{}".format(pin))
+        return None
+
+    def getDS18B20Data(self, pin):
+        try:
+            for ds18b20 in self.ds18b20Current:
+                if ds18b20["IoPinId"] == pin:
+                    return ds18b20
+        except Exception:
+            self._logger.exception("Error while getting DS18B20 Data for Pin{}".format(pin))
+
+
+
+    def getConfigurationByPin(self, pin):
+        for configuration in self._settings.get(["sio_configurations"]):
+            if configuration["pin"] == pin:
+                return configuration
+        return None
+
+    def getConfigurationByPinAndActiveMode(self, pin, active_mode):
+        for configuration in self._settings.get(["sio_configurations"]):
+            if configuration["pin"] == str(pin) and configuration["active_mode"] == active_mode:
+                return configuration
+        return None
+
+    # Used to calibrate the DHT data. This is a simple linear calibration.
+    def rangeMap(self, value, in_min, in_max, out_min, out_max):
+        try:
+            return (value - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
+        except Exception:
+            return value
+
+    def plotly_callback(self, comm, parsed_temps):
+        dht = self.getDHTData(4) # get DHT data for pin (Need to identify the pin for the DHT sensor)
+        dhtTemp = dict()
+        dhtHum = dict()
+        if dht is not None:
+            if (dht["configTemp"] is not None):
+                dhtTemp[dht["configTemp"]["name"]] = (dht["temp"], None)
+                parsed_temps.update(dhtTemp)
+            if (dht["configHum"] is not None):
+                dhtHum[dht["configHum"]["name"]] = (dht["hum"], None)
+                parsed_temps.update(dhtHum)
+
+        return parsed_temps
 
     # Important to note that this is indexed in the order of the Configurations for the UI. Not in the pin IO Order.
     # It will also only return items that corospond to the sio_configurations. So if you only configured 2 points, you will
     # only get 2 items in the array.
     # to get the status for the configured pins, use get_sio_digital_status
+
     def get_sio_Configuration_status(self):
         status = []
         for configuration in self._settings.get(["sio_configurations"]):
@@ -629,6 +802,30 @@ class SiocontrolPlugin(
                     elif configuration["active_mode"] == "active_out_high":
                         pstatus = "on" if self.IOCurrent[pin] == "1" else "off"
                         status.append(pstatus)
+                    elif configuration["active_mode"] == "in_dht_t":
+                        dht = self.getDHTData(pin)
+                        if dht is not None:
+                            pstatus = '{0:.2f}'.format(dht["temp"]) + "°C"
+                        else:
+                            pstatus = "--" + "°C"
+
+                        status.append(pstatus)
+                    elif configuration["active_mode"] == "in_dht_h":
+                        dht = self.getDHTData(pin)
+                        if dht is not None:
+                            pstatus = '{0:.2f}'.format(dht["hum"]) + "%"
+                        else:
+                            pstatus = "--" + "%"
+
+                        status.append(pstatus)
+                    elif configuration["active_mode"] == "in_ds18b20":
+                        ds18b20 = self.getDS18B20Data(pin)
+                        if ds18b20 is not None:
+                            pstatus = '{0:.2f}'.format(ds18b20["temp"]) + "°C"
+                        else:
+                            pstatus = "--" + "°C"
+
+                        status.append(pstatus)
                 else:
                     if self.conn is not None and self.conn.is_connected() is True:
                         self._logger.debug("Pin number assigned to IO control {} maybe out of range.".format(pin))
@@ -638,8 +835,8 @@ class SiocontrolPlugin(
                 status.append("off")
 
         return status
-    ##~~ Softwareupdate hook
 
+    # #~~ Softwareupdate hook
     def get_update_information(self):
         # Define the configuration for your plugin to use with the Software Update
         # Plugin here. See https://docs.octoprint.org/en/master/bundledplugins/softwareupdate.html
@@ -680,14 +877,18 @@ def __plugin_load__():
 
     global __plugin_hooks__
     __plugin_hooks__ = {
-        "octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information
+        "octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information,
+        "octoprint.comm.protocol.temperatures.received": __plugin_implementation__.plotly_callback
     }
 
     global __plugin_helpers__
     __plugin_helpers__ = dict(
         set_sio_digital_state=__plugin_implementation__.set_sio_digital_state,
         get_sio_digital_state=__plugin_implementation__.get_sio_digital_state,
+        get_sio_dht_data=__plugin_implementation__.getDHTData,
+        get_sio_ds18b20_data=__plugin_implementation__.getDS18B20Data,
         send_sio_command=__plugin_implementation__.send_sio_command,
+        force_sio_reconnect=__plugin_implementation__.forceReconnect,
         register_plugin=__plugin_implementation__.register_plugin,
 
     )

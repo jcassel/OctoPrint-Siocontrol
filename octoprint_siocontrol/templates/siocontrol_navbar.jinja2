@@ -1,3 +1,7 @@
 <div data-bind="foreach: sioButtons">
-    <button class="btn " data-bind="visible: on_nav ==1, click:function(){$parent.toggleSioByIONumber(pin);},css:{'siocontrol_btOn':current_state =='on','siocontrol_btOff': current_state == 'off'}"><i data-bind="class: icon" style="font-size: 1.3em; cursor: pointer; user-select: none"></i>
+    <button class="btn " data-bind="visible: on_nav ==1 && !active_mode.startsWith('in_dht') && !active_mode.startsWith('in_ds18b2') , click:function(){$parent.toggleSioByIONumber(pin);},css:{'siocontrol_btOn':current_state =='on','siocontrol_btOff': current_state == 'off'}"><i data-bind="class: icon" style="font-size: 1.3em; cursor: pointer; user-select: none"></i></button>
+    <button class="btn" data-bind="visible: on_nav ==1 && (active_mode.startsWith('in_dht') || active_mode.startsWith('in_ds18b2'))" >
+            <i data-bind="class: icon" style="font-size: 1.3em; cursor: pointer; user-select: none"></i>
+            <span data-bind="text: current_state"></span>
+    </button> 
 </div>

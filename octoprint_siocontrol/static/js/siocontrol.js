@@ -11,7 +11,7 @@ $(function () {
         self.controlViewModel = parameters[1];
         self.loginStateViewModel = parameters[2];
         self.accessViewModel = parameters[3];
-
+        self.SIOReportedCompatibleVersion = ko.observable();
         self.sioButtons = ko.observableArray();
         self.sioConfigurations = ko.observableArray();
         self.SIO_IOCounts = ko.observableArray();
@@ -21,6 +21,7 @@ $(function () {
         self.SIO_Ports = ko.observableArray();
         self.IOStatusMessage = ko.observable('Ready');
         self.IOSWarnings = ko.observable('');
+        
 
         self.SIO_SI = 3001;
 
@@ -77,6 +78,7 @@ $(function () {
             self.SIO_EnableFRSIOPoint = self.settingsViewModel.settings.plugins.siocontrol.EnableFRSIOPoint();
             self.SIO_FRSIOPoint = self.settingsViewModel.settings.plugins.siocontrol.FRSIOPoint();
             self.SIO_InvertFRSIOPoint = self.settingsViewModel.settings.plugins.siocontrol.InvertFRSIOPoint();
+            
 
             console.log(self.SIO_Port()); //here for debuging. Easy to get to binding packed js
 
@@ -86,6 +88,9 @@ $(function () {
 
             console.log(self.SIO_SI);
 
+            self.getReportedCompatibleVersion();
+
+
         };
 
 
@@ -93,7 +98,7 @@ $(function () {
             return self.loginStateViewModel.hasPermission(self.accessViewModel.permissions.CONTROL);
         };
 
-
+            
         self.onSettingsBeforeSave = function () {
             self.settingsViewModel.settings.plugins.siocontrol.sio_configurations(self.sioConfigurations.slice(0));
             self.settingsViewModel.settings.plugins.siocontrol.IOPort(self.SIO_Port());
@@ -121,6 +126,7 @@ $(function () {
         self.onSettingsShown = function () {
             self.sioConfigurations(self.settingsViewModel.settings.plugins.siocontrol.sio_configurations.slice(0));
             self.updateIconPicker();
+            self.getReportedCompatibleVersion();
         };
 
         self.onSettingsHidden = function () {
@@ -128,9 +134,32 @@ $(function () {
         };
 
         self.addSioConfiguration = function () {
-            self.sioConfigurations.push({ pin: 0, icon: "fas fa-plug", name: "", active_mode: "active_out_high", default_state: "default_off", on_nav: 0,on_side:0 });
+            self.sioConfigurations.push({ pin: 0, icon: "fas fa-plug", name: "", active_mode: "active_out_high", default_state: "default_off", on_nav: 0,on_side:0,inmin:0,inmax:0,outmin:0,outmax:0,offset:0 });
+            self.updateSioButtons();
             self.updateIconPicker();
         };
+
+        self.isDHT = function (active_mode){
+            var amode = "";
+            try {
+                amode = active_mode();    
+            } catch (error) {
+                amode = active_mode;
+            }
+            
+            return amode.startsWith("in_dht");
+        };
+
+        self.isDS18B20 = function (active_mode){
+            var amode = "";
+            try {
+                amode = active_mode();    
+            } catch (error) {
+                amode = active_mode;
+            }
+            
+            return amode.startsWith("in_ds18b20");
+        }
 
 
 
@@ -192,13 +221,20 @@ $(function () {
             });
         };
 
-
+        /*
         self.addSioScriptAlignment = function () {
             self.sioScriptAlignments.push({ name: "", pin: -1, trigger_type: "" });
         };
 
         self.removeSioScriptAlignment = function (alignments) {
             self.sioScriptAlignments.remove(alignments);
+        };
+        */
+
+        self.getReportedCompatibleVersion = function () {
+            OctoPrint.simpleApiCommand("siocontrol","getReportedCompatibleVersion",{}).then(function (version) {
+                self.SIOReportedCompatibleVersion(version);
+            });
         };
 
         self.getStatusMessage = function () {
