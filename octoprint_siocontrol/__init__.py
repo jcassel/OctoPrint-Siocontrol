@@ -38,6 +38,9 @@ class SiocontrolPlugin(
         self.conn = None  # Connection.Connection(self)
         return
     
+    def is_api_protected(self) -> bool:
+        return True
+    
     def get_ReportedCompatibleVersion(self):
         return self.ReportedCompatibleVersion
 
