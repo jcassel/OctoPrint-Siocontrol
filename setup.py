@@ -5,7 +5,7 @@ from setuptools import setup
 plugin_identifier = "siocontrol"
 plugin_package = "octoprint_siocontrol"
 plugin_name = "SIO Control"
-plugin_version = "1.0.2"
+plugin_version = "1.0.3"
 plugin_description = "Serial IO Control. Integrates a micro controller to give native IO to your OctoPrint device"
 plugin_author = "jcassel"
 plugin_author_email = "jcassel@softwaresedge.com"

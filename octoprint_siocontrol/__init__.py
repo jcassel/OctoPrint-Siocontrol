@@ -259,6 +259,11 @@ class SiocontrolPlugin(
 
         return avalPorts
 
+    def is_api_protected(self):
+        """Require authentication for API access."""
+        return True # for now
+        
+
     def get_api_commands(self):
         return dict(
             turnSioOn=["id"],
